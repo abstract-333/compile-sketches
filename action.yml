@@ -1,4 +1,4 @@
-name: "Compile Arduino Sketches"
+name: "Compile Arduino Sketches UV"
 description: >-
   Checks whether Arduino sketches will compile and produces a report of data from the compilations
 inputs:
