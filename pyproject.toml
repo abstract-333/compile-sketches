@@ -1,42 +1,35 @@
+[project]
+name = "arduino_compile_sketches"
+version = "1.1.2"
+requires-python = "==3.12.4"
+dependencies = [
+    "GitPython==3.1.46",
+    "PyGithub==2.8.1",
+    "PyYAML==6.0.3",
+    "semver==3.0.4",
+]
+
 [tool.black]
 line-length = 120
 
-[tool.poetry]
-package-mode = false
+[dependency-groups]
+dev = [
+    "black==26.1.0",
+    "codespell==2.4.1",
+    "coverage==7.13.4",
+    "pytest==9.0.2",
+    "pytest-mock==3.15.1",
+    "flake8==7.3.0",
+    "pep8-naming==0.15.1",
+    "yamllint==1.38.0",
+]
+external = ["pyserial==3.5"]
+pipx = ["poetry==2.3.2"]
 
-[tool.poetry.dependencies]
-python = "3.12.4"
-GitPython = "3.1.46"
-PyGithub = "2.8.1"
-PyYAML = "6.0.3"
-semver = "3.0.4"
-
-[tool.poetry.group.dev.dependencies]
-black = "26.1.0"
-codespell = "2.4.1"
-coverage = "7.13.4"
-pytest = "9.0.2"
-pytest-mock = "3.15.1"
-flake8 = "7.3.0"
-pep8-naming = "0.15.1"
-yamllint = "1.38.0"
-
-[tool.poetry.group.external]
-# Provided only for use by boards platforms
-# NOTE: This group is a temporary workaround that will be removed at the 2.0.0 release of the action.
-optional = true
-
-[tool.poetry.group.external.dependencies]
-pyserial = "3.5"
-
-# The dependencies in this group are installed using pipx; NOT Poetry. The use of a `poetry` section is a hack required
-# in order to be able to manage updates of these dependencies via Dependabot, as used for all other dependencies.
-[tool.poetry.group.pipx]
-optional = true
-
-[tool.poetry.group.pipx.dependencies]
-poetry = "2.3.2"
+[tool.uv]
+package = false
+default-groups = ["dev"]
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["uv_build>=0.9.9,<0.10.0"]
+build-backend = "uv_build"

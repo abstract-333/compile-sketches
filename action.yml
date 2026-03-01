@@ -75,15 +75,13 @@ runs:
       with:
         version: "0.10.7" 
         enable-cache: true
-        cache-dependency-glob: "requirements.txt"
+        cache-dependency-glob: "uv.lock"
 
     - name: Install dependencies
       # Added missing shell property here
       shell: bash
       working-directory: ${{ github.action_path }}
-      run: |
-        uv venv
-        uv pip install -r requirements.txt
+      run: uv sync --no-dev 
 
     - name: Run script
       shell: bash
@@ -102,4 +100,4 @@ runs:
       working-directory: ${{ github.action_path }}
       run: |
         # Use uv run to execute the script within the created environment
-        uv run python compilesketches/compilesketches.py
+        uv run compilesketches/compilesketches.py
