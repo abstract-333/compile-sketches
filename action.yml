@@ -86,7 +86,8 @@ runs:
       shell: bash
       working-directory: ${{ github.action_path }}
       run: |
-        uv pip install --system -r requirements.txt
+        uv venv
+        uv pip install -r requirements.txt
 
     - name: Run script
       shell: bash
