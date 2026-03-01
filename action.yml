@@ -82,7 +82,11 @@ runs:
         enable-cache: true
 
     - name: Install dependencies
-      run: uv pip install --system -r requirements.txt
+      # Added missing shell property here
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      run: |
+        uv pip install --system -r requirements.txt
 
     - name: Run script
       shell: bash
