@@ -1,4 +1,4 @@
-name: "Compile Arduino Sketches"
+name: "Compile Arduino Sketches UV"
 description: >-
   Checks whether Arduino sketches will compile and produces a report of data from the compilations
 inputs:
@@ -65,12 +65,10 @@ inputs:
 runs:
   using: composite
   steps:
-    # User installations of external Python package platform dependencies will be located here.
     - name: Get system Python "user site-packages" path
       id: system-user-site-packages
       shell: bash
       run: |
-        # Get system Python "user site-packages" path.
         echo "path=$(python -m site --user-site)" >> $GITHUB_OUTPUT
 
     - name: Install Python
@@ -78,42 +76,29 @@ runs:
       with:
         python-version-file: ${{ github.action_path }}/pyproject.toml
 
+    - name: Setup uv
+      uses: astral-sh/setup-uv@v7
+      with:
+        enable-cache: true
+        cache-dependency-glob: "**/pyproject.toml"
+
     - name: Action setup
       shell: bash
       working-directory: ${{ github.action_path }}
       run: |
         echo "::group::Action setup"
 
-        # Install Poetry.
-        pipx install \
-          --python "$(which python)" \
-            "poetry==$( \
-              yq \
-                --input-format toml \
-                --output-format yaml \
-                '.tool.poetry.group.pipx.dependencies.poetry' \
-                < pyproject.toml
-            )"
-
-        # Install Python dependencies.
-        poetry install \
-          --only main,external
+        # Sync dependencies directly from pyproject.toml 
+        # --no-dev ensures we only get main/external groups if defined correctly
+        uv venv
+        uv sync --no-dev
 
         # Make user-installed Python packages available to platforms.
-        readonly PYTHON_ENVIRONMENT_PATH="$(
-          poetry env info \
-            --path
-        )"
-        readonly VENV_SITE_PACKAGES_PATH="$(
-          poetry run \
-            python -c \
-              'import site; print(site.getsitepackages()[0])'
-        )"
-        echo \
-          "${{ steps.system-user-site-packages.outputs.path }}" > \
-          "${VENV_SITE_PACKAGES_PATH}/system-user-site-packages.pth"
+        # uv uses a standard .venv folder by default
+        readonly VENV_SITE_PACKAGES_PATH=$(uv run python -c 'import site; print(site.getsitepackages()[0])')
+        
+        echo "${{ steps.system-user-site-packages.outputs.path }}" > "${VENV_SITE_PACKAGES_PATH}/system-user-site-packages.pth"
 
-        # Terminate action setup group
         echo "::endgroup::"
 
     - name: Run script
@@ -132,6 +117,5 @@ runs:
         INPUT_SKETCHES-REPORT-PATH: ${{ inputs.sketches-report-path }}
       working-directory: ${{ github.action_path }}
       run: |
-        # Run action
-        poetry run \
-          python compilesketches/compilesketches.py
+        # Use uv run to execute the script within the created environment
+        uv run python compilesketches/compilesketches.py
