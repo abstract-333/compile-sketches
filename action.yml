@@ -85,21 +85,7 @@ runs:
     - name: Action setup
       shell: bash
       working-directory: ${{ github.action_path }}
-      run: |
-        echo "::group::Action setup"
-
-        # Sync dependencies directly from pyproject.toml 
-        # --no-dev ensures we only get main/external groups if defined correctly
-        uv venv
-        uv sync --no-dev
-
-        # Make user-installed Python packages available to platforms.
-        # uv uses a standard .venv folder by default
-        readonly VENV_SITE_PACKAGES_PATH=$(uv run python -c 'import site; print(site.getsitepackages()[0])')
-        
-        echo "${{ steps.system-user-site-packages.outputs.path }}" > "${VENV_SITE_PACKAGES_PATH}/system-user-site-packages.pth"
-
-        echo "::endgroup::"
+      run: uv sync --no-dev
 
     - name: Run script
       shell: bash
