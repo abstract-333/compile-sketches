@@ -78,7 +78,6 @@ runs:
         cache-dependency-glob: "uv.lock"
 
     - name: Install dependencies
-      # Added missing shell property here
       shell: bash
       working-directory: ${{ github.action_path }}
       run: uv sync --no-dev 
