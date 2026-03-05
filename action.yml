@@ -2,6 +2,11 @@ name: "Compile Arduino Sketches UV"
 description: >-
   Checks whether Arduino sketches will compile and produces a report of data from the compilations
 inputs:
+  enable-cache:
+    description: >-
+      Enable caching for Arduino CLI and Platforms
+    default: "false"
+    required: false
   cli-version:
     description: >-
       Version of Arduino CLI to use when building
@@ -82,9 +87,20 @@ runs:
       working-directory: ${{ github.action_path }}
       run: uv sync --no-dev 
 
+    - name: Cache Arduino Files
+      if: inputs.enable-cache == 'true'
+      uses: actions/cache@v5
+      with:
+        path: |
+          ~/bin/arduino-cli
+          ~/.arduino15/packages
+          ~/.arduino15/staging
+        key: arduino-${{ runner.os }}-${{ inputs.fqbn }}-${{ inputs.cli-version }}
+
     - name: Run script
       shell: bash
       env:
+        INPUT_ENABLE-CACHE: ${{ inputs.enable-cache }}
         INPUT_CLI-VERSION: ${{ inputs.cli-version }}
         INPUT_FQBN: ${{ inputs.fqbn }}
         INPUT_LIBRARIES: ${{ inputs.libraries }}

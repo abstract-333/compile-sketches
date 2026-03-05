@@ -77,6 +77,7 @@ def main():
         )
 
     compile_sketches = CompileSketches(
+        enable_cache = os.environ.get("INPUT_ENABLE-CACHE", "false").lower() == "true",
         cli_version=os.environ["INPUT_CLI-VERSION"],
         fqbn_arg=os.environ["INPUT_FQBN"],
         platforms=os.environ["INPUT_PLATFORMS"],
@@ -158,6 +159,7 @@ class CompileSketches:
 
     def __init__(
         self,
+        enable_cache,
         cli_version,
         fqbn_arg,
         platforms,
@@ -172,7 +174,7 @@ class CompileSketches:
     ):
         """Process, store, and validate the action's inputs."""
         self.cli_version = cli_version
-
+        self.enable_cache = enable_cache
         parsed_fqbn_arg = parse_fqbn_arg_input(fqbn_arg=fqbn_arg)
         self.fqbn = parsed_fqbn_arg["fqbn"]
         self.additional_url = parsed_fqbn_arg["additional_url"]
@@ -293,6 +295,15 @@ class CompileSketches:
 
     def install_arduino_cli(self):
         """Install Arduino CLI."""
+        cli_exe = self.arduino_cli_installation_path.joinpath("arduino-cli")
+        
+        if self.enable_cache and cli_exe.exists():
+            print("🚀 Cache Hit: Arduino CLI found. Skipping download.")
+            # Set required env vars even on cache hit
+            os.environ["ARDUINO_DIRECTORIES_USER"] = str(self.arduino_cli_user_directory_path)
+            os.environ["ARDUINO_DIRECTORIES_DATA"] = str(self.arduino_cli_data_directory_path)
+            return
+        
         self.verbose_print("Installing Arduino CLI version", self.cli_version)
         arduino_cli_archive_download_url_prefix = (
             "https://downloads.arduino.cc/arduino-cli/"
@@ -392,6 +403,17 @@ class CompileSketches:
 
     def install_platforms(self):
         """Install Arduino boards platforms."""
+        # Simple check: if the FQBN directory exists in the packages folder
+        if self.enable_cache:
+            fqbn_parts = self.fqbn.split(":")
+            if len(fqbn_parts) >= 2:
+                vendor, arch = fqbn_parts[0], fqbn_parts[1]
+                check_path = self.board_manager_platforms_path.joinpath(vendor, "hardware", arch)
+                
+                if check_path.exists():
+                    print(f"🚀 Cache Hit: Platform {vendor}:{arch} found. Skipping installation.")
+                    return
+                
         platform_list = self.Dependencies()
         if self.platforms == "":
             # When no platforms input is provided, automatically determine the board's platform dependency from the FQBN

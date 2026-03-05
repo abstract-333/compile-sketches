@@ -3,8 +3,10 @@ name = "arduino_compile_sketches"
 version = "1.1.2"
 requires-python = ">=3.12"
 dependencies = [
+    "black>=26.1.0",
     "GitPython==3.1.46",
     "PyGithub==2.8.1",
+    "pygments>=2.19.1",
     "PyYAML==6.0.3",
     "semver==3.0.4",
 ]
@@ -14,7 +16,6 @@ line-length = 120
 
 [dependency-groups]
 dev = [
-    "black==26.1.0",
     "codespell==2.4.1",
     "coverage==7.13.4",
     "pytest==9.0.2",
