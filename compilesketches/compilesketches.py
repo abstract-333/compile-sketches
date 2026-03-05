@@ -295,14 +295,6 @@ class CompileSketches:
 
     def install_arduino_cli(self):
         """Install Arduino CLI."""
-        cli_exe = self.arduino_cli_installation_path.joinpath("arduino-cli")
-        
-        if self.enable_cache and cli_exe.exists():
-            print("🚀 Cache Hit: Arduino CLI found. Skipping download.")
-            # Set required env vars even on cache hit
-            os.environ["ARDUINO_DIRECTORIES_USER"] = str(self.arduino_cli_user_directory_path)
-            os.environ["ARDUINO_DIRECTORIES_DATA"] = str(self.arduino_cli_data_directory_path)
-            return
         
         self.verbose_print("Installing Arduino CLI version", self.cli_version)
         arduino_cli_archive_download_url_prefix = (
@@ -409,7 +401,7 @@ class CompileSketches:
             if len(fqbn_parts) >= 2:
                 vendor, arch = fqbn_parts[0], fqbn_parts[1]
                 check_path = self.board_manager_platforms_path.joinpath(vendor, "hardware", arch)
-                
+                x
                 if check_path.exists():
                     print(f"🚀 Cache Hit: Platform {vendor}:{arch} found. Skipping installation.")
                     return
