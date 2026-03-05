@@ -21,6 +21,32 @@ import semver
 import yaml
 import yaml.parser
 
+import time
+from types import TracebackType
+from typing import Type
+
+
+class CustomTimer:
+    def __init__(self, name: str):
+        self.name = name
+
+    def __enter__(self):
+        print(f"::group::⏳ Starting: {self.name}")
+        self.start = time.perf_counter()
+        return self
+
+    def __exit__(
+        self,
+        exc_type: Type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ):
+        self.end: float = time.perf_counter()
+        self.interval: float = self.end - self.start
+        print(f"✅ Finished: {self.name}")
+        print(f"⏱  Elapsed time: {self.interval:.2f} seconds")
+        print("::endgroup::")
+
 
 def main():
     if "INPUT_SIZE-REPORT-SKETCH" in os.environ:
@@ -31,14 +57,18 @@ def main():
             "::warning::The size-deltas-report-folder-name input is deprecated. Use the equivalent input: "
             "sketches-report-path instead."
         )
-        os.environ["INPUT_SKETCHES-REPORT-PATH"] = os.environ["INPUT_SIZE-DELTAS-REPORT-FOLDER-NAME"]
+        os.environ["INPUT_SKETCHES-REPORT-PATH"] = os.environ[
+            "INPUT_SIZE-DELTAS-REPORT-FOLDER-NAME"
+        ]
 
     if "INPUT_ENABLE-SIZE-DELTAS-REPORT" in os.environ:
         print(
             "::warning::The enable-size-deltas-report input is deprecated. Use the equivalent input: "
             "enable-deltas-report instead."
         )
-        os.environ["INPUT_ENABLE-DELTAS-REPORT"] = os.environ["INPUT_ENABLE-SIZE-DELTAS-REPORT"]
+        os.environ["INPUT_ENABLE-DELTAS-REPORT"] = os.environ[
+            "INPUT_ENABLE-SIZE-DELTAS-REPORT"
+        ]
 
     if "INPUT_ENABLE-SIZE-TRENDS-REPORT" in os.environ:
         print(
@@ -151,10 +181,14 @@ class CompileSketches:
 
         # Save the space-separated list of paths as a Python list
         sketch_paths = get_list_from_multiformat_input(input_value=sketch_paths)
-        absolute_sketch_paths = [absolute_path(path=sketch_path) for sketch_path in sketch_paths.value]
+        absolute_sketch_paths = [
+            absolute_path(path=sketch_path) for sketch_path in sketch_paths.value
+        ]
         self.sketch_paths = absolute_sketch_paths
 
-        self.cli_compile_flags = yaml.load(stream=cli_compile_flags, Loader=yaml.SafeLoader)
+        self.cli_compile_flags = yaml.load(
+            stream=cli_compile_flags, Loader=yaml.SafeLoader
+        )
         self.verbose = parse_boolean_input(boolean_input=verbose)
 
         if github_token == "":
@@ -163,13 +197,17 @@ class CompileSketches:
         else:
             self.github_api = github.Github(login_or_token=github_token)
 
-        self.enable_deltas_report = parse_boolean_input(boolean_input=enable_deltas_report)
+        self.enable_deltas_report = parse_boolean_input(
+            boolean_input=enable_deltas_report
+        )
         # The enable-deltas-report input has a default value so it should always be either True or False
         if self.enable_deltas_report is None:
             print("::error::Invalid value for enable-deltas-report input")
             sys.exit(1)
 
-        self.enable_warnings_report = parse_boolean_input(boolean_input=enable_warnings_report)
+        self.enable_warnings_report = parse_boolean_input(
+            boolean_input=enable_warnings_report
+        )
         # The enable-deltas-report input has a default value so it should always be either True or False
         if self.enable_warnings_report is None:
             print("::error::Invalid value for enable-warnings-report input")
@@ -201,7 +239,9 @@ class CompileSketches:
 
         # Get the PR's base ref from the GitHub API
         try:
-            repository_api = self.github_api.get_repo(full_name_or_id=os.environ["GITHUB_REPOSITORY"])
+            repository_api = self.github_api.get_repo(
+                full_name_or_id=os.environ["GITHUB_REPOSITORY"]
+            )
         except github.UnknownObjectException:
             print(
                 "::error::Unable to access repository data. Please specify the github-token input in your "
@@ -213,32 +253,39 @@ class CompileSketches:
 
     def compile_sketches(self):
         """Do compilation tests and record data."""
-        self.install_arduino_cli()
 
-        # Install the platform dependency
-        self.install_platforms()
+        with CustomTimer("Installing Arduino CLI"):
+            self.install_arduino_cli()
 
-        # Install the library dependencies
-        self.install_libraries()
+        with CustomTimer("Installing Platforms"):
+            self.install_platforms()
 
-        # Compile all sketches under the paths specified by the sketch-paths input
+        with CustomTimer("Installing Libraries"):
+            self.install_libraries()
+
+        # Compile all sketches
         all_compilations_successful = True
         sketch_report_list = []
-
         sketch_list = self.find_sketches()
-        for sketch in sketch_list:
-            # It's necessary to clear the cache between each compilation to get a true compiler warning count, otherwise
-            # only the first sketch compilation's warning count would reflect warnings from cached code
-            compilation_result = self.compile_sketch(sketch_path=sketch, clean_build_cache=self.enable_warnings_report)
-            if not compilation_result.success:
-                all_compilations_successful = False
 
-            # Store the size data for this sketch
-            sketch_report_list.append(self.get_sketch_report(compilation_result=compilation_result))
+        with CustomTimer(f"Compiling {len(sketch_list)} Sketches"):
+            for sketch in sketch_list:
+                # Use a sub-timer if you want to see time per individual sketch
+                print(f"Compiling: {sketch.name}")
+                compilation_result = self.compile_sketch(
+                    sketch_path=sketch, clean_build_cache=self.enable_warnings_report
+                )
+                if not compilation_result.success:
+                    all_compilations_successful = False
+                sketch_report_list.append(
+                    self.get_sketch_report(compilation_result=compilation_result)
+                )
 
-        sketches_report = self.get_sketches_report(sketch_report_list=sketch_report_list)
-
-        self.create_sketches_report_file(sketches_report=sketches_report)
+        with CustomTimer("Generating Reports"):
+            sketches_report = self.get_sketches_report(
+                sketch_report_list=sketch_report_list
+            )
+            self.create_sketches_report_file(sketches_report=sketches_report)
 
         if not all_compilations_successful:
             print("::error::One or more compilations failed")
@@ -247,8 +294,12 @@ class CompileSketches:
     def install_arduino_cli(self):
         """Install Arduino CLI."""
         self.verbose_print("Installing Arduino CLI version", self.cli_version)
-        arduino_cli_archive_download_url_prefix = "https://downloads.arduino.cc/arduino-cli/"
-        arduino_cli_archive_file_name = "arduino-cli_" + self.cli_version + "_Linux_64bit.tar.gz"
+        arduino_cli_archive_download_url_prefix = (
+            "https://downloads.arduino.cc/arduino-cli/"
+        )
+        arduino_cli_archive_file_name = (
+            "arduino-cli_" + self.cli_version + "_Linux_64bit.tar.gz"
+        )
 
         self.install_from_download(
             url=arduino_cli_archive_download_url_prefix + arduino_cli_archive_file_name,
@@ -259,16 +310,27 @@ class CompileSketches:
         )
 
         # Configure the location of the Arduino CLI user directory
-        os.environ["ARDUINO_DIRECTORIES_USER"] = str(self.arduino_cli_user_directory_path)
+        os.environ["ARDUINO_DIRECTORIES_USER"] = str(
+            self.arduino_cli_user_directory_path
+        )
         # Configure the location of the Arduino CLI data directory
-        os.environ["ARDUINO_DIRECTORIES_DATA"] = str(self.arduino_cli_data_directory_path)
+        os.environ["ARDUINO_DIRECTORIES_DATA"] = str(
+            self.arduino_cli_data_directory_path
+        )
 
     def verbose_print(self, *print_arguments):
         """Print log output when in verbose mode"""
         if self.verbose:
             print(*print_arguments)
 
-    def install_from_download(self, url, source_path, destination_parent_path, destination_name=None, force=False):
+    def install_from_download(
+        self,
+        url,
+        source_path,
+        destination_parent_path,
+        destination_name=None,
+        force=False,
+    ):
         """Download an archive, extract, and install.
 
         Keyword arguments:
@@ -282,12 +344,18 @@ class CompileSketches:
         destination_parent_path = pathlib.Path(destination_parent_path)
 
         # Create temporary folder with function duration for the download
-        with tempfile.TemporaryDirectory("-compilesketches-download_folder") as download_folder:
-            download_file_path = pathlib.PurePath(download_folder, url.rsplit(sep="/", maxsplit=1)[1])
+        with tempfile.TemporaryDirectory(
+            "-compilesketches-download_folder"
+        ) as download_folder:
+            download_file_path = pathlib.PurePath(
+                download_folder, url.rsplit(sep="/", maxsplit=1)[1]
+            )
 
             # https://stackoverflow.com/a/38358646
             with open(file=str(download_file_path), mode="wb") as out_file:
-                with contextlib.closing(thing=urllib.request.urlopen(url=url)) as file_pointer:
+                with contextlib.closing(
+                    thing=urllib.request.urlopen(url=url)
+                ) as file_pointer:
                     block_size = 1024 * 8
                     while True:
                         block = file_pointer.read(block_size)
@@ -296,14 +364,20 @@ class CompileSketches:
                         out_file.write(block)
 
             # Create temporary folder with script run duration for the extraction
-            extract_folder = tempfile.mkdtemp(dir=self.temporary_directory.name, prefix="install_from_download-")
+            extract_folder = tempfile.mkdtemp(
+                dir=self.temporary_directory.name, prefix="install_from_download-"
+            )
 
             # Extract archive
-            shutil.unpack_archive(filename=str(download_file_path), extract_dir=extract_folder)
+            shutil.unpack_archive(
+                filename=str(download_file_path), extract_dir=extract_folder
+            )
 
             archive_root_path = get_archive_root_path(extract_folder)
 
-            absolute_source_path = pathlib.Path(archive_root_path, source_path).resolve()
+            absolute_source_path = pathlib.Path(
+                archive_root_path, source_path
+            ).resolve()
 
             if not absolute_source_path.exists():
                 print("::error::Archive source path:", source_path, "not found")
@@ -323,18 +397,24 @@ class CompileSketches:
             # When no platforms input is provided, automatically determine the board's platform dependency from the FQBN
             platform_list.manager.append(self.get_fqbn_platform_dependency())
         else:
-            platform_list = self.sort_dependency_list(yaml.load(stream=self.platforms, Loader=yaml.SafeLoader))
+            platform_list = self.sort_dependency_list(
+                yaml.load(stream=self.platforms, Loader=yaml.SafeLoader)
+            )
 
         if len(platform_list.manager) > 0:
             # This should always be called before the functions to install platforms from other sources so that the
             # override system will work
-            self.install_platforms_from_board_manager(platform_list=platform_list.manager)
+            self.install_platforms_from_board_manager(
+                platform_list=platform_list.manager
+            )
 
         if len(platform_list.path) > 0:
             self.install_platforms_from_path(platform_list=platform_list.path)
 
         if len(platform_list.repository) > 0:
-            self.install_platforms_from_repository(platform_list=platform_list.repository)
+            self.install_platforms_from_repository(
+                platform_list=platform_list.repository
+            )
 
         if len(platform_list.download) > 0:
             self.install_platforms_from_download(platform_list=platform_list.download)
@@ -343,9 +423,15 @@ class CompileSketches:
         """Return the platform dependency definition automatically generated from the FQBN."""
         # Extract the platform name from the FQBN (e.g., arduino:avr:uno => arduino:avr)
         fqbn_component_list = self.fqbn.split(sep=":")
-        fqbn_platform_dependency = {self.dependency_name_key: fqbn_component_list[0] + ":" + fqbn_component_list[1]}
+        fqbn_platform_dependency = {
+            self.dependency_name_key: fqbn_component_list[0]
+            + ":"
+            + fqbn_component_list[1]
+        }
         if self.additional_url is not None:
-            fqbn_platform_dependency[self.dependency_source_url_key] = self.additional_url
+            fqbn_platform_dependency[self.dependency_source_url_key] = (
+                self.additional_url
+            )
 
         return fqbn_platform_dependency
 
@@ -360,12 +446,17 @@ class CompileSketches:
             if dependency is not None:
                 if self.dependency_source_url_key in dependency:
                     # Repositories are identified by the URL starting with git:// or ending in .git
-                    if dependency[self.dependency_source_url_key].rstrip("/").endswith(".git") or dependency[
-                        self.dependency_source_url_key
-                    ].startswith("git://"):
+                    if dependency[self.dependency_source_url_key].rstrip("/").endswith(
+                        ".git"
+                    ) or dependency[self.dependency_source_url_key].startswith(
+                        "git://"
+                    ):
                         sorted_dependencies.repository.append(dependency)
                     elif (
-                        re.match(pattern=".*/package_.*index.json", string=dependency[self.dependency_source_url_key])
+                        re.match(
+                            pattern=".*/package_.*index.json",
+                            string=dependency[self.dependency_source_url_key],
+                        )
                         is not None
                     ):
                         # URLs that match the filename requirements of the package_index.json specification are assumed
@@ -406,7 +497,10 @@ class CompileSketches:
 
             # Append additional Boards Manager URLs to the commands, if required
             if self.dependency_source_url_key in platform:
-                additional_urls_option = ["--additional-urls", platform[self.dependency_source_url_key]]
+                additional_urls_option = [
+                    "--additional-urls",
+                    platform[self.dependency_source_url_key],
+                ]
                 core_update_index_command.extend(additional_urls_option)
                 core_install_command.extend(additional_urls_option)
 
@@ -414,12 +508,14 @@ class CompileSketches:
 
             # Download the platform index for the platform
             self.run_arduino_cli_command(
-                command=core_update_index_command, enable_output=self.get_run_command_output_level()
+                command=core_update_index_command,
+                enable_output=self.get_run_command_output_level(),
             )
 
             # Install the platform
             self.run_arduino_cli_command(
-                command=core_install_command, enable_output=self.get_run_command_output_level()
+                command=core_install_command,
+                enable_output=self.get_run_command_output_level(),
             )
 
     def get_manager_dependency_name(self, dependency):
@@ -447,7 +543,9 @@ class CompileSketches:
 
         return enable_stdout
 
-    def run_arduino_cli_command(self, command, enable_output=RunCommandOutput.ON_FAILURE, exit_on_failure=True):
+    def run_arduino_cli_command(
+        self, command, enable_output=RunCommandOutput.ON_FAILURE, exit_on_failure=True
+    ):
         """Run the specified Arduino CLI command and return the object returned by subprocess.run().
 
         Keyword arguments:
@@ -463,12 +561,16 @@ class CompileSketches:
         if self.verbose:
             full_command.extend(["--log-level", debug_output_log_level, "--verbose"])
         arduino_cli_output = self.run_command(
-            command=full_command, enable_output=enable_output, exit_on_failure=exit_on_failure
+            command=full_command,
+            enable_output=enable_output,
+            exit_on_failure=exit_on_failure,
         )
 
         return arduino_cli_output
 
-    def run_command(self, command, enable_output=RunCommandOutput.ON_FAILURE, exit_on_failure=True):
+    def run_command(
+        self, command, enable_output=RunCommandOutput.ON_FAILURE, exit_on_failure=True
+    ):
         """Run a command and return the subprocess.CompletedProcess instance (stdout attribute contains combined stdout
         and stderr).
 
@@ -479,12 +581,17 @@ class CompileSketches:
                          (RunCommandOutput.NONE, RunCommandOutput.ON_FAILURE, RunCommandOutput.ALWAYS)
         exit_on_failure -- whether to exit the script if the command returns a non-zero exit status (default True)
         """
-        command_data = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        command_data = subprocess.run(
+            command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
+        )
 
         # Print output if appropriate
         if enable_output == self.RunCommandOutput.ALWAYS or (
             command_data.returncode != 0
-            and (enable_output == self.RunCommandOutput.ON_FAILURE or enable_output == self.RunCommandOutput.ALWAYS)
+            and (
+                enable_output == self.RunCommandOutput.ON_FAILURE
+                or enable_output == self.RunCommandOutput.ALWAYS
+            )
         ):
             # Cast args to string and join them to form a string
             print(
@@ -513,13 +620,22 @@ class CompileSketches:
         """
         for platform in platform_list:
             source_path = absolute_path(platform[self.dependency_source_path_key])
-            self.verbose_print("Installing platform from path:", path_relative_to_workspace(path=source_path))
+            self.verbose_print(
+                "Installing platform from path:",
+                path_relative_to_workspace(path=source_path),
+            )
 
             if not source_path.exists():
-                print("::error::Platform source path:", path_relative_to_workspace(path=source_path), "doesn't exist")
+                print(
+                    "::error::Platform source path:",
+                    path_relative_to_workspace(path=source_path),
+                    "doesn't exist",
+                )
                 sys.exit(1)
 
-            platform_installation_path = self.get_platform_installation_path(platform=platform)
+            platform_installation_path = self.get_platform_installation_path(
+                platform=platform
+            )
 
             # Install the platform
             self.install_from_path(
@@ -547,26 +663,41 @@ class CompileSketches:
 
         # Default to installing to the sketchbook
         platform_vendor = platform[self.dependency_name_key].split(sep=":")[0]
-        platform_architecture = platform[self.dependency_name_key].rsplit(sep=":", maxsplit=1)[1]
+        platform_architecture = platform[self.dependency_name_key].rsplit(
+            sep=":", maxsplit=1
+        )[1]
 
         # Default to installing to the sketchbook
-        platform_installation_path.path = self.user_platforms_path.joinpath(platform_vendor, platform_architecture)
+        platform_installation_path.path = self.user_platforms_path.joinpath(
+            platform_vendor, platform_architecture
+        )
 
         # I have no clue why this is needed, but arduino-cli core list fails if this isn't done first. The 3rd party
         # platforms are still shown in the list even if their index URLs are not specified to the command via the
         # --additional-urls option
         self.run_arduino_cli_command(command=["core", "update-index"])
         # Use Arduino CLI to get the list of installed platforms
-        command_data = self.run_arduino_cli_command(command=["core", "list", "--format", "json"])
-        installed_platform_list = self.cli_core_list_platform_list(json.loads(command_data.stdout))
+        command_data = self.run_arduino_cli_command(
+            command=["core", "list", "--format", "json"]
+        )
+        installed_platform_list = self.cli_core_list_platform_list(
+            json.loads(command_data.stdout)
+        )
         for installed_platform in installed_platform_list:
-            if installed_platform[self.cli_json_key("core list", "id")] == platform[self.dependency_name_key]:
+            if (
+                installed_platform[self.cli_json_key("core list", "id")]
+                == platform[self.dependency_name_key]
+            ):
                 # The platform has been installed via Board Manager, so do an overwrite
-                platform_installation_path.path = self.board_manager_platforms_path.joinpath(
-                    platform_vendor,
-                    "hardware",
-                    platform_architecture,
-                    installed_platform[self.cli_json_key("core list", "installed_version")],
+                platform_installation_path.path = (
+                    self.board_manager_platforms_path.joinpath(
+                        platform_vendor,
+                        "hardware",
+                        platform_architecture,
+                        installed_platform[
+                            self.cli_json_key("core list", "installed_version")
+                        ],
+                    )
                 )
                 platform_installation_path.is_overwrite = True
 
@@ -574,7 +705,9 @@ class CompileSketches:
 
         return platform_installation_path
 
-    def install_from_path(self, source_path, destination_parent_path, destination_name=None, force=False):
+    def install_from_path(
+        self, source_path, destination_parent_path, destination_name=None, force=False
+    ):
         """Create a symlink to the source path in the destination path.
 
         Keyword arguments:
@@ -604,7 +737,9 @@ class CompileSketches:
         # Create the parent path if it doesn't already exist
         destination_parent_path.mkdir(parents=True, exist_ok=True)
 
-        destination_path.symlink_to(target=source_path, target_is_directory=source_path.is_dir())
+        destination_path.symlink_to(
+            target=source_path, target_is_directory=source_path.is_dir()
+        )
 
         # Remove the symlink on script exit. The source path files added by the script are stored in a temporary folder
         # which is deleted on exit, so the symlink will serve no purpose.
@@ -617,7 +752,10 @@ class CompileSketches:
         platform_list -- list of dictionaries defining the dependencies
         """
         for platform in platform_list:
-            self.verbose_print("Installing platform from repository:", platform[self.dependency_source_url_key])
+            self.verbose_print(
+                "Installing platform from repository:",
+                platform[self.dependency_source_url_key],
+            )
 
             git_ref = self.get_repository_dependency_ref(dependency=platform)
 
@@ -651,7 +789,13 @@ class CompileSketches:
         return git_ref
 
     def install_from_repository(
-        self, url, git_ref, source_path, destination_parent_path, destination_name=None, force=False
+        self,
+        url,
+        git_ref,
+        source_path,
+        destination_parent_path,
+        destination_name=None,
+        force=False,
     ):
         """Install by cloning a repository
 
@@ -666,10 +810,16 @@ class CompileSketches:
         """
         if destination_name is None and source_path.rstrip("/") == ".":
             # Use the repository name
-            destination_name = url.rstrip("/").rsplit(sep="/", maxsplit=1)[1].rsplit(sep=".", maxsplit=1)[0]
+            destination_name = (
+                url.rstrip("/")
+                .rsplit(sep="/", maxsplit=1)[1]
+                .rsplit(sep=".", maxsplit=1)[0]
+            )
 
         # Clone to a temporary folder with script run duration to allow installing from subfolders of repos
-        clone_folder = tempfile.mkdtemp(dir=self.temporary_directory.name, prefix="install_from_repository-")
+        clone_folder = tempfile.mkdtemp(
+            dir=self.temporary_directory.name, prefix="install_from_repository-"
+        )
         self.clone_repository(url=url, git_ref=git_ref, destination_path=clone_folder)
         # Install to the final location
         self.install_from_path(
@@ -690,10 +840,16 @@ class CompileSketches:
         if git_ref is None:
             # Shallow clone is only possible if using the tip of the branch
             # Use `None` as value for `git clone` options with no argument
-            clone_arguments = {"depth": 1, "shallow-submodules": None, "recurse-submodules": True}
+            clone_arguments = {
+                "depth": 1,
+                "shallow-submodules": None,
+                "recurse-submodules": True,
+            }
         else:
             clone_arguments = {}
-        cloned_repository = git.Repo.clone_from(url=url, to_path=destination_path, **clone_arguments)
+        cloned_repository = git.Repo.clone_from(
+            url=url, to_path=destination_path, **clone_arguments
+        )
         if git_ref is not None:
             if git_ref == self.latest_release_indicator:
                 # "latest" may be used in place of a ref to cause a checkout of the latest tag
@@ -702,11 +858,16 @@ class CompileSketches:
                     cloned_repository.rev_parse(git_ref)
                 except gitdb.exc.BadName:
                     # There is no real ref named "latest", so checkout latest (associated with most recent commit) tag
-                    git_ref = sorted(cloned_repository.tags, key=lambda tag: tag.commit.committed_date)[-1]
+                    git_ref = sorted(
+                        cloned_repository.tags,
+                        key=lambda tag: tag.commit.committed_date,
+                    )[-1]
 
             # checkout ref
             cloned_repository.git.checkout(git_ref)
-            cloned_repository.git.submodule("update", "--init", "--recursive", "--recommend-shallow")
+            cloned_repository.git.submodule(
+                "update", "--init", "--recursive", "--recommend-shallow"
+            )
 
     def install_platforms_from_download(self, platform_list):
         """Install libraries by downloading them
@@ -715,7 +876,10 @@ class CompileSketches:
         platform_list -- list of dictionaries defining the dependencies
         """
         for platform in platform_list:
-            self.verbose_print("Installing platform from download URL:", platform[self.dependency_source_url_key])
+            self.verbose_print(
+                "Installing platform from download URL:",
+                platform[self.dependency_source_url_key],
+            )
             if self.dependency_source_path_key in platform:
                 source_path = platform[self.dependency_source_path_key]
             else:
@@ -741,17 +905,24 @@ class CompileSketches:
             library_list = self.sort_dependency_list(libraries.value)
         else:
             # libraries input uses the old space-separated list syntax
-            library_list.manager = [{self.dependency_name_key: library_name} for library_name in libraries.value]
+            library_list.manager = [
+                {self.dependency_name_key: library_name}
+                for library_name in libraries.value
+            ]
 
             # The original behavior of the action was to assume the root of the repo is a library to be installed, so
             # that behavior is retained when using the old input syntax
-            library_list.path = [{self.dependency_source_path_key: os.environ["GITHUB_WORKSPACE"]}]
+            library_list.path = [
+                {self.dependency_source_path_key: os.environ["GITHUB_WORKSPACE"]}
+            ]
 
         # Dependencies of Library Manager sourced libraries (as defined by the library's metadata file) are
         # automatically installed. For this reason, LM-sources must be installed first so the library dependencies from
         # other sources which were explicitly defined won't be replaced.
         if len(library_list.manager) > 0:
-            self.install_libraries_from_library_manager(library_list=library_list.manager)
+            self.install_libraries_from_library_manager(
+                library_list=library_list.manager
+            )
 
         if len(library_list.path) > 0:
             self.install_libraries_from_path(library_list=library_list.path)
@@ -776,7 +947,10 @@ class CompileSketches:
         for library in library_list:
             lib_install_command = lib_install_base_command.copy()
             lib_install_command.append(self.get_manager_dependency_name(library))
-            self.run_arduino_cli_command(command=lib_install_command, enable_output=self.get_run_command_output_level())
+            self.run_arduino_cli_command(
+                command=lib_install_command,
+                enable_output=self.get_run_command_output_level(),
+            )
 
     def install_libraries_from_path(self, library_list):
         """Install libraries from local paths
@@ -786,10 +960,16 @@ class CompileSketches:
         """
         for library in library_list:
             source_path = absolute_path(library[self.dependency_source_path_key])
-            self.verbose_print("Installing library from path:", path_relative_to_workspace(source_path))
+            self.verbose_print(
+                "Installing library from path:", path_relative_to_workspace(source_path)
+            )
 
             if not source_path.exists():
-                print("::error::Library source path:", path_relative_to_workspace(source_path), "doesn't exist")
+                print(
+                    "::error::Library source path:",
+                    path_relative_to_workspace(source_path),
+                    "doesn't exist",
+                )
                 sys.exit(1)
 
             # Determine library folder name (important because it is a factor in dependency resolution)
@@ -818,7 +998,10 @@ class CompileSketches:
         library_list -- list of dictionaries defining the dependencies
         """
         for library in library_list:
-            self.verbose_print("Installing library from repository:", library[self.dependency_source_url_key])
+            self.verbose_print(
+                "Installing library from repository:",
+                library[self.dependency_source_url_key],
+            )
 
             # Determine library folder name (important because it is a factor in dependency resolution)
             if self.dependency_destination_name_key in library:
@@ -851,7 +1034,10 @@ class CompileSketches:
         library_list -- list of dictionaries defining the dependencies
         """
         for library in library_list:
-            self.verbose_print("Installing library from download URL:", library[self.dependency_source_url_key])
+            self.verbose_print(
+                "Installing library from download URL:",
+                library[self.dependency_source_url_key],
+            )
             if self.dependency_source_path_key in library:
                 source_path = library[self.dependency_source_path_key]
             else:
@@ -873,11 +1059,17 @@ class CompileSketches:
     def find_sketches(self):
         """Return a list of all sketches under the paths specified in the sketch paths list recursively."""
         sketch_list = []
-        self.verbose_print("Finding sketches under paths:", list_to_string(self.sketch_paths))
+        self.verbose_print(
+            "Finding sketches under paths:", list_to_string(self.sketch_paths)
+        )
         for sketch_path in self.sketch_paths:
             sketch_path_sketch_list = []
             if not sketch_path.exists():
-                print("::error::Sketch path:", path_relative_to_workspace(path=sketch_path), "doesn't exist")
+                print(
+                    "::error::Sketch path:",
+                    path_relative_to_workspace(path=sketch_path),
+                    "doesn't exist",
+                )
                 sys.exit(1)
 
             # Check if the specified path is a sketch (as opposed to containing sketches in subfolders)
@@ -887,7 +1079,11 @@ class CompileSketches:
                     sketch_list.append(sketch_path.parent)
                     continue
                 else:
-                    print("::error::Sketch path:", path_relative_to_workspace(path=sketch_path), "is not a sketch")
+                    print(
+                        "::error::Sketch path:",
+                        path_relative_to_workspace(path=sketch_path),
+                        "is not a sketch",
+                    )
                     sys.exit(1)
             else:
                 # Path is a directory
@@ -902,7 +1098,10 @@ class CompileSketches:
 
             if len(sketch_path_sketch_list) == 0:
                 # If a path provided via the sketch-paths input doesn't contain sketches, that indicates user error
-                print("::error::No sketches were found in", path_relative_to_workspace(path=sketch_path))
+                print(
+                    "::error::No sketches were found in",
+                    path_relative_to_workspace(path=sketch_path),
+                )
                 sys.exit(1)
 
             sketch_list.extend(sketch_path_sketch_list)
@@ -929,13 +1128,17 @@ class CompileSketches:
                 shutil.rmtree(path=cache_path)
         start_time = time.monotonic()
         compilation_data = self.run_arduino_cli_command(
-            command=compilation_command, enable_output=self.RunCommandOutput.NONE, exit_on_failure=False
+            command=compilation_command,
+            enable_output=self.RunCommandOutput.NONE,
+            exit_on_failure=False,
         )
         diff_time = time.monotonic() - start_time
 
         # Group compilation output to make the log easy to read
         # https://github.com/actions/toolkit/blob/master/docs/commands.md#group-and-ungroup-log-lines
-        print("::group::Compiling sketch:", path_relative_to_workspace(path=sketch_path))
+        print(
+            "::group::Compiling sketch:", path_relative_to_workspace(path=sketch_path)
+        )
         print(compilation_data.stdout)
         print("::endgroup::")
 
@@ -963,15 +1166,21 @@ class CompileSketches:
         Keyword arguments:
         compilation_result -- object returned by compile_sketch()
         """
-        current_sizes = self.get_sizes_from_output(compilation_result=compilation_result)
+        current_sizes = self.get_sizes_from_output(
+            compilation_result=compilation_result
+        )
         if self.enable_warnings_report:
-            current_warning_count = self.get_warning_count_from_output(compilation_result=compilation_result)
+            current_warning_count = self.get_warning_count_from_output(
+                compilation_result=compilation_result
+            )
         else:
             current_warning_count = None
         previous_sizes = None
         previous_warning_count = None
         if self.do_deltas_report(
-            compilation_result=compilation_result, current_sizes=current_sizes, current_warnings=current_warning_count
+            compilation_result=compilation_result,
+            current_sizes=current_sizes,
+            current_warnings=current_warning_count,
         ):
             # Get data for the sketch at the base ref
             # Get the head ref
@@ -982,15 +1191,20 @@ class CompileSketches:
             self.checkout_deltas_base_ref()
 
             # Compile the sketch again
-            print("Compiling previous version of sketch to determine memory usage change")
+            print(
+                "Compiling previous version of sketch to determine memory usage change"
+            )
             previous_compilation_result = self.compile_sketch(
-                sketch_path=compilation_result.sketch, clean_build_cache=self.enable_warnings_report
+                sketch_path=compilation_result.sketch,
+                clean_build_cache=self.enable_warnings_report,
             )
 
             # git checkout the head ref to return the repository to its previous state
             repository.git.checkout(original_git_ref, recurse_submodules=True)
 
-            previous_sizes = self.get_sizes_from_output(compilation_result=previous_compilation_result)
+            previous_sizes = self.get_sizes_from_output(
+                compilation_result=previous_compilation_result
+            )
             if self.enable_warnings_report:
                 previous_warning_count = self.get_warning_count_from_output(
                     compilation_result=previous_compilation_result
@@ -998,13 +1212,18 @@ class CompileSketches:
 
         # Add global data for sketch to report
         sketch_report = {
-            self.ReportKeys.name: str(path_relative_to_workspace(path=compilation_result.sketch)),
+            self.ReportKeys.name: str(
+                path_relative_to_workspace(path=compilation_result.sketch)
+            ),
             self.ReportKeys.compilation_success: compilation_result.success,
-            self.ReportKeys.sizes: self.get_sizes_report(current_sizes=current_sizes, previous_sizes=previous_sizes),
+            self.ReportKeys.sizes: self.get_sizes_report(
+                current_sizes=current_sizes, previous_sizes=previous_sizes
+            ),
         }
         if self.enable_warnings_report:
             sketch_report[self.ReportKeys.warnings] = self.get_warnings_report(
-                current_warnings=current_warning_count, previous_warnings=previous_warning_count
+                current_warnings=current_warning_count,
+                previous_warnings=previous_warning_count,
             )
 
         return sketch_report
@@ -1068,7 +1287,11 @@ class CompileSketches:
                         size[self.ReportKeys.maximum] = size_data
 
                         size[self.ReportKeys.relative] = round(
-                            (100 * size[self.ReportKeys.absolute] / size[self.ReportKeys.maximum]),
+                            (
+                                100
+                                * size[self.ReportKeys.absolute]
+                                / size[self.ReportKeys.maximum]
+                            ),
                             self.relative_size_report_decimal_places,
                         )
 
@@ -1076,7 +1299,9 @@ class CompileSketches:
 
         return sizes
 
-    def get_size_data_from_output(self, compilation_output, memory_type, size_data_type):
+    def get_size_data_from_output(
+        self, compilation_output, memory_type, size_data_type
+    ):
         """Parse the stdout from the compilation process for a specific datum and return it, or None if not found.
 
         Keyword arguments:
@@ -1085,7 +1310,9 @@ class CompileSketches:
         size_data_type -- the type of size data to get
         """
         size_data = None
-        regex_match = re.search(pattern=memory_type["regex"][size_data_type], string=compilation_output)
+        regex_match = re.search(
+            pattern=memory_type["regex"][size_data_type], string=compilation_output
+        )
         if regex_match:
             size_data = int(regex_match.group(1))
         else:
@@ -1117,7 +1344,11 @@ class CompileSketches:
         """
         if compilation_result.success is True:
             compiler_warning_regex = ":[0-9]+:[0-9]+: warning:"
-            warning_count = len(re.findall(pattern=compiler_warning_regex, string=compilation_result.output))
+            warning_count = len(
+                re.findall(
+                    pattern=compiler_warning_regex, string=compilation_result.output
+                )
+            )
         else:
             warning_count = self.not_applicable_indicator
 
@@ -1135,8 +1366,14 @@ class CompileSketches:
             self.enable_deltas_report
             and compilation_result.success
             and (
-                any(size.get(self.ReportKeys.absolute) != self.not_applicable_indicator for size in current_sizes)
-                or (current_warnings is not None and current_warnings != self.not_applicable_indicator)
+                any(
+                    size.get(self.ReportKeys.absolute) != self.not_applicable_indicator
+                    for size in current_sizes
+                )
+                or (
+                    current_warnings is not None
+                    and current_warnings != self.not_applicable_indicator
+                )
             )
         )
 
@@ -1172,7 +1409,11 @@ class CompileSketches:
 
         sizes_report = []
         for current_size, previous_size in zip(current_sizes, previous_sizes):
-            sizes_report.append(self.get_size_report(current_size=current_size, previous_size=previous_size))
+            sizes_report.append(
+                self.get_size_report(
+                    current_size=current_size, previous_size=previous_size
+                )
+            )
 
         return sizes_report
 
@@ -1197,11 +1438,15 @@ class CompileSketches:
             # Calculate the memory usage change
             if (
                 current_size[self.ReportKeys.absolute] == self.not_applicable_indicator
-                or previous_size[self.ReportKeys.absolute] == self.not_applicable_indicator
+                or previous_size[self.ReportKeys.absolute]
+                == self.not_applicable_indicator
             ):
                 absolute_delta = self.not_applicable_indicator
             else:
-                absolute_delta = current_size[self.ReportKeys.absolute] - previous_size[self.ReportKeys.absolute]
+                absolute_delta = (
+                    current_size[self.ReportKeys.absolute]
+                    - previous_size[self.ReportKeys.absolute]
+                )
 
             if (
                 absolute_delta == self.not_applicable_indicator
@@ -1217,7 +1462,12 @@ class CompileSketches:
 
             # Size deltas reports are enabled
             # Print the memory usage change data to the log
-            delta_message = "Change in " + str(current_size[self.ReportKeys.name]) + ": " + str(absolute_delta)
+            delta_message = (
+                "Change in "
+                + str(current_size[self.ReportKeys.name])
+                + ": "
+                + str(absolute_delta)
+            )
             if relative_delta != self.not_applicable_indicator:
                 delta_message += " (" + str(relative_delta) + "%)"
             print(delta_message)
@@ -1249,7 +1499,10 @@ class CompileSketches:
         if previous_warnings is not None:
             # Deltas reports are enabled
             # Calculate the change in the warnings count
-            if current_warnings == self.not_applicable_indicator or previous_warnings == self.not_applicable_indicator:
+            if (
+                current_warnings == self.not_applicable_indicator
+                or previous_warnings == self.not_applicable_indicator
+            ):
                 warnings_delta = self.not_applicable_indicator
             else:
                 warnings_delta = current_warnings - previous_warnings
@@ -1257,8 +1510,12 @@ class CompileSketches:
             # Print the warning count change to the log
             print("Change in compiler warning count:", warnings_delta)
 
-            warnings_report[self.ReportKeys.previous] = {self.ReportKeys.absolute: previous_warnings}
-            warnings_report[self.ReportKeys.delta] = {self.ReportKeys.absolute: warnings_delta}
+            warnings_report[self.ReportKeys.previous] = {
+                self.ReportKeys.absolute: previous_warnings
+            }
+            warnings_report[self.ReportKeys.delta] = {
+                self.ReportKeys.absolute: warnings_delta
+            }
 
         return warnings_report
 
@@ -1273,21 +1530,37 @@ class CompileSketches:
         sketches_report = {
             self.ReportKeys.commit_hash: current_git_ref,
             self.ReportKeys.commit_url: (
-                "https://github.com/" + os.environ["GITHUB_REPOSITORY"] + "/commit/" + current_git_ref
+                "https://github.com/"
+                + os.environ["GITHUB_REPOSITORY"]
+                + "/commit/"
+                + current_git_ref
             ),
             # The action is currently designed to only compile for one board per run, so the boards list will only have
             # a single element, but this provides a report format that can accommodate the possible addition of multiple
             # boards support
-            self.ReportKeys.boards: [{self.ReportKeys.board: self.fqbn, self.ReportKeys.sketches: sketch_report_list}],
+            self.ReportKeys.boards: [
+                {
+                    self.ReportKeys.board: self.fqbn,
+                    self.ReportKeys.sketches: sketch_report_list,
+                }
+            ],
         }
 
-        sizes_summary_report = self.get_sizes_summary_report(sketch_report_list=sketch_report_list)
+        sizes_summary_report = self.get_sizes_summary_report(
+            sketch_report_list=sketch_report_list
+        )
         if sizes_summary_report:
-            sketches_report[self.ReportKeys.boards][0][self.ReportKeys.sizes] = sizes_summary_report
+            sketches_report[self.ReportKeys.boards][0][self.ReportKeys.sizes] = (
+                sizes_summary_report
+            )
 
-        warnings_summary_report = self.get_warnings_summary_report(sketch_report_list=sketch_report_list)
+        warnings_summary_report = self.get_warnings_summary_report(
+            sketch_report_list=sketch_report_list
+        )
         if warnings_summary_report:
-            sketches_report[self.ReportKeys.boards][0][self.ReportKeys.warnings] = warnings_summary_report
+            sketches_report[self.ReportKeys.boards][0][self.ReportKeys.warnings] = (
+                warnings_summary_report
+            )
 
         return sketches_report
 
@@ -1304,70 +1577,106 @@ class CompileSketches:
                 size_summary_report_index_list = [
                     index
                     for index, size_summary in enumerate(sizes_summary_report)
-                    if size_summary.get(self.ReportKeys.name) == size_report[self.ReportKeys.name]
+                    if size_summary.get(self.ReportKeys.name)
+                    == size_report[self.ReportKeys.name]
                 ]
                 if not size_summary_report_index_list:
                     # There is no existing entry in the summary list for this memory type, so create one
-                    sizes_summary_report.append({self.ReportKeys.name: size_report[self.ReportKeys.name]})
+                    sizes_summary_report.append(
+                        {self.ReportKeys.name: size_report[self.ReportKeys.name]}
+                    )
                     size_summary_report_index = len(sizes_summary_report) - 1
                 else:
                     size_summary_report_index = size_summary_report_index_list[0]
 
                 if (
-                    self.ReportKeys.maximum not in sizes_summary_report[size_summary_report_index]
-                    or sizes_summary_report[size_summary_report_index][self.ReportKeys.maximum]
-                    == self.not_applicable_indicator
-                ):
-                    sizes_summary_report[size_summary_report_index][self.ReportKeys.maximum] = size_report[
+                    self.ReportKeys.maximum
+                    not in sizes_summary_report[size_summary_report_index]
+                    or sizes_summary_report[size_summary_report_index][
                         self.ReportKeys.maximum
                     ]
+                    == self.not_applicable_indicator
+                ):
+                    sizes_summary_report[size_summary_report_index][
+                        self.ReportKeys.maximum
+                    ] = size_report[self.ReportKeys.maximum]
 
                 if self.ReportKeys.delta in size_report:
                     if (
-                        self.ReportKeys.delta not in sizes_summary_report[size_summary_report_index]
-                        or sizes_summary_report[size_summary_report_index][self.ReportKeys.delta][
-                            self.ReportKeys.absolute
-                        ][self.ReportKeys.minimum]
+                        self.ReportKeys.delta
+                        not in sizes_summary_report[size_summary_report_index]
+                        or sizes_summary_report[size_summary_report_index][
+                            self.ReportKeys.delta
+                        ][self.ReportKeys.absolute][self.ReportKeys.minimum]
                         == self.not_applicable_indicator
                     ):
-                        sizes_summary_report[size_summary_report_index][self.ReportKeys.delta] = {
+                        sizes_summary_report[size_summary_report_index][
+                            self.ReportKeys.delta
+                        ] = {
                             self.ReportKeys.absolute: {
-                                self.ReportKeys.minimum: size_report[self.ReportKeys.delta][self.ReportKeys.absolute],
-                                self.ReportKeys.maximum: size_report[self.ReportKeys.delta][self.ReportKeys.absolute],
+                                self.ReportKeys.minimum: size_report[
+                                    self.ReportKeys.delta
+                                ][self.ReportKeys.absolute],
+                                self.ReportKeys.maximum: size_report[
+                                    self.ReportKeys.delta
+                                ][self.ReportKeys.absolute],
                             },
                             self.ReportKeys.relative: {
-                                self.ReportKeys.minimum: size_report[self.ReportKeys.delta][self.ReportKeys.relative],
-                                self.ReportKeys.maximum: size_report[self.ReportKeys.delta][self.ReportKeys.relative],
+                                self.ReportKeys.minimum: size_report[
+                                    self.ReportKeys.delta
+                                ][self.ReportKeys.relative],
+                                self.ReportKeys.maximum: size_report[
+                                    self.ReportKeys.delta
+                                ][self.ReportKeys.relative],
                             },
                         }
-                    elif size_report[self.ReportKeys.delta][self.ReportKeys.absolute] != self.not_applicable_indicator:
+                    elif (
+                        size_report[self.ReportKeys.delta][self.ReportKeys.absolute]
+                        != self.not_applicable_indicator
+                    ):
                         if (
                             size_report[self.ReportKeys.delta][self.ReportKeys.absolute]
-                            < sizes_summary_report[size_summary_report_index][self.ReportKeys.delta][
-                                self.ReportKeys.absolute
-                            ][self.ReportKeys.minimum]
+                            < sizes_summary_report[size_summary_report_index][
+                                self.ReportKeys.delta
+                            ][self.ReportKeys.absolute][self.ReportKeys.minimum]
                         ):
-                            sizes_summary_report[size_summary_report_index][self.ReportKeys.delta][
+                            sizes_summary_report[size_summary_report_index][
+                                self.ReportKeys.delta
+                            ][self.ReportKeys.absolute][
+                                self.ReportKeys.minimum
+                            ] = size_report[self.ReportKeys.delta][
                                 self.ReportKeys.absolute
-                            ][self.ReportKeys.minimum] = size_report[self.ReportKeys.delta][self.ReportKeys.absolute]
+                            ]
 
-                            sizes_summary_report[size_summary_report_index][self.ReportKeys.delta][
+                            sizes_summary_report[size_summary_report_index][
+                                self.ReportKeys.delta
+                            ][self.ReportKeys.relative][
+                                self.ReportKeys.minimum
+                            ] = size_report[self.ReportKeys.delta][
                                 self.ReportKeys.relative
-                            ][self.ReportKeys.minimum] = size_report[self.ReportKeys.delta][self.ReportKeys.relative]
+                            ]
 
                         if (
                             size_report[self.ReportKeys.delta][self.ReportKeys.absolute]
-                            > sizes_summary_report[size_summary_report_index][self.ReportKeys.delta][
-                                self.ReportKeys.absolute
-                            ][self.ReportKeys.maximum]
+                            > sizes_summary_report[size_summary_report_index][
+                                self.ReportKeys.delta
+                            ][self.ReportKeys.absolute][self.ReportKeys.maximum]
                         ):
-                            sizes_summary_report[size_summary_report_index][self.ReportKeys.delta][
+                            sizes_summary_report[size_summary_report_index][
+                                self.ReportKeys.delta
+                            ][self.ReportKeys.absolute][
+                                self.ReportKeys.maximum
+                            ] = size_report[self.ReportKeys.delta][
                                 self.ReportKeys.absolute
-                            ][self.ReportKeys.maximum] = size_report[self.ReportKeys.delta][self.ReportKeys.absolute]
+                            ]
 
-                            sizes_summary_report[size_summary_report_index][self.ReportKeys.delta][
+                            sizes_summary_report[size_summary_report_index][
+                                self.ReportKeys.delta
+                            ][self.ReportKeys.relative][
+                                self.ReportKeys.maximum
+                            ] = size_report[self.ReportKeys.delta][
                                 self.ReportKeys.relative
-                            ][self.ReportKeys.maximum] = size_report[self.ReportKeys.delta][self.ReportKeys.relative]
+                            ]
 
         return sizes_summary_report
 
@@ -1384,11 +1693,14 @@ class CompileSketches:
                 self.ReportKeys.warnings in sketch_report
                 and self.ReportKeys.delta in sketch_report[self.ReportKeys.warnings]
             ):
-                sketch_report_delta = sketch_report[self.ReportKeys.warnings][self.ReportKeys.delta][
-                    self.ReportKeys.absolute
-                ]
+                sketch_report_delta = sketch_report[self.ReportKeys.warnings][
+                    self.ReportKeys.delta
+                ][self.ReportKeys.absolute]
 
-                if summary_report_minimum is None or summary_report_minimum == self.not_applicable_indicator:
+                if (
+                    summary_report_minimum is None
+                    or summary_report_minimum == self.not_applicable_indicator
+                ):
                     summary_report_minimum = sketch_report_delta
                 elif (
                     sketch_report_delta != self.not_applicable_indicator
@@ -1396,7 +1708,10 @@ class CompileSketches:
                 ):
                     summary_report_minimum = sketch_report_delta
 
-                if summary_report_maximum is None or summary_report_maximum == self.not_applicable_indicator:
+                if (
+                    summary_report_maximum is None
+                    or summary_report_maximum == self.not_applicable_indicator
+                ):
                     summary_report_maximum = sketch_report_delta
                 elif (
                     sketch_report_delta != self.not_applicable_indicator
@@ -1433,7 +1748,9 @@ class CompileSketches:
 
         # Write the memory usage data to a file named according to the FQBN
         with open(
-            file=sketches_report_path.joinpath(self.fqbn.replace(":", "-") + ".json"), mode="w", encoding="utf-8"
+            file=sketches_report_path.joinpath(self.fqbn.replace(":", "-") + ".json"),
+            mode="w",
+            encoding="utf-8",
         ) as report_file:
             json.dump(obj=sketches_report, fp=report_file, indent=2)
 
@@ -1450,7 +1767,10 @@ class CompileSketches:
 
         if (
             not semver.VersionInfo.is_valid(version=self.cli_version)
-            or semver.Version.parse(version=self.cli_version).compare(other=first_new_interface_version) >= 0
+            or semver.Version.parse(version=self.cli_version).compare(
+                other=first_new_interface_version
+            )
+            >= 0
         ):
             # cli_version is either "latest" (which will now always be >=1.0.0) or an explicit version >=1.0.0
 
@@ -1493,7 +1813,9 @@ class CompileSketches:
         for translation in key_translations[command][key_name]:
             match = True
             for constraint in translation["constraints"]:
-                if not semver.Version.parse(version=self.cli_version).match(match_expr=constraint):
+                if not semver.Version.parse(version=self.cli_version).match(
+                    match_expr=constraint
+                ):
                     # The Arduino CLI version does not match the translation's version constraints
                     match = False
                     break
@@ -1570,7 +1892,9 @@ def path_relative_to_workspace(path):
     """
     path = absolute_path(path=path)
     try:
-        relative_path = path.relative_to(absolute_path(path=os.environ["GITHUB_WORKSPACE"]))
+        relative_path = path.relative_to(
+            absolute_path(path=os.environ["GITHUB_WORKSPACE"])
+        )
     except ValueError:
         # Path is outside workspace, so just use the given path
         relative_path = path

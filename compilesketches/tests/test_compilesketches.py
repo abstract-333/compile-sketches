@@ -16,7 +16,9 @@ import compilesketches
 
 os.environ["GITHUB_WORKSPACE"] = "/foo/github-workspace"
 
-test_data_path = pathlib.PurePath(os.path.dirname(os.path.realpath(__file__)), "testdata")
+test_data_path = pathlib.PurePath(
+    os.path.dirname(os.path.realpath(__file__)), "testdata"
+)
 
 
 def get_compilesketches_object(
@@ -35,7 +37,9 @@ def get_compilesketches_object(
     sketches_report_path="foo report_folder_name",
 ):
     with unittest.mock.patch(
-        "compilesketches.CompileSketches.get_deltas_base_ref", autospec=True, return_value=deltas_base_ref
+        "compilesketches.CompileSketches.get_deltas_base_ref",
+        autospec=True,
+        return_value=deltas_base_ref,
     ):
         compilesketches_object = compilesketches.CompileSketches(
             cli_version=cli_version,
@@ -69,16 +73,25 @@ def directories_are_same(left_directory, right_directory):
     ):
         return False
     for subdirectory in directory_comparison.common_dirs:
-        if not directories_are_same(left_directory.joinpath(subdirectory), right_directory.joinpath(subdirectory)):
+        if not directories_are_same(
+            left_directory.joinpath(subdirectory),
+            right_directory.joinpath(subdirectory),
+        ):
             return False
     return True
 
 
 def test_directories_are_same():
-    assert directories_are_same(left_directory=test_data_path, right_directory=test_data_path) is True
     assert (
         directories_are_same(
-            left_directory=test_data_path.joinpath("HasSketches"), right_directory=test_data_path.joinpath("NoSketches")
+            left_directory=test_data_path, right_directory=test_data_path
+        )
+        is True
+    )
+    assert (
+        directories_are_same(
+            left_directory=test_data_path.joinpath("HasSketches"),
+            right_directory=test_data_path.joinpath("NoSketches"),
         )
         is False
     )
@@ -117,7 +130,9 @@ def setup_action_inputs(monkeypatch):
     monkeypatch.setenv("INPUT_VERBOSE", ActionInputs.verbose)
     monkeypatch.setenv("INPUT_GITHUB-TOKEN", ActionInputs.github_token)
     monkeypatch.setenv("INPUT_ENABLE-DELTAS-REPORT", ActionInputs.enable_deltas_report)
-    monkeypatch.setenv("INPUT_ENABLE-WARNINGS-REPORT", ActionInputs.enable_warnings_report)
+    monkeypatch.setenv(
+        "INPUT_ENABLE-WARNINGS-REPORT", ActionInputs.enable_warnings_report
+    )
     monkeypatch.setenv("INPUT_SKETCHES-REPORT-PATH", ActionInputs.sketches_report_path)
 
     return ActionInputs()
@@ -129,13 +144,19 @@ def stub_compilesketches_object(mocker):
         def compile_sketches(self):
             pass  # pragma: no cover
 
-    mocker.patch("compilesketches.CompileSketches", autospec=True, return_value=CompileSketches())
+    mocker.patch(
+        "compilesketches.CompileSketches", autospec=True, return_value=CompileSketches()
+    )
     mocker.patch.object(CompileSketches, "compile_sketches")
 
 
 @pytest.mark.parametrize("use_size_report_sketch", [True, False])
 def test_main_size_report_sketch_deprecation_warning(
-    capsys, monkeypatch, setup_action_inputs, stub_compilesketches_object, use_size_report_sketch
+    capsys,
+    monkeypatch,
+    setup_action_inputs,
+    stub_compilesketches_object,
+    use_size_report_sketch,
 ):
     if use_size_report_sketch:
         monkeypatch.setenv("INPUT_SIZE-REPORT-SKETCH", "foo")
@@ -151,7 +172,11 @@ def test_main_size_report_sketch_deprecation_warning(
 
 @pytest.mark.parametrize("use_enable_size_trends_report", [True, False])
 def test_main_enable_size_trends_report_deprecation_warning(
-    capsys, monkeypatch, setup_action_inputs, stub_compilesketches_object, use_enable_size_trends_report
+    capsys,
+    monkeypatch,
+    setup_action_inputs,
+    stub_compilesketches_object,
+    use_enable_size_trends_report,
 ):
     if use_enable_size_trends_report:
         monkeypatch.setenv("INPUT_ENABLE-SIZE-TRENDS-REPORT", "true")
@@ -161,7 +186,8 @@ def test_main_enable_size_trends_report_deprecation_warning(
     expected_output = ""
     if use_enable_size_trends_report:
         expected_output = (
-            expected_output + "::warning::The size trends report feature has been moved to a dedicated action. See the "
+            expected_output
+            + "::warning::The size trends report feature has been moved to a dedicated action. See the "
             "documentation at "
             "https://github.com/arduino/actions/tree/report-size-trends-action/libraries/report-size-trends"
         )
@@ -171,11 +197,17 @@ def test_main_enable_size_trends_report_deprecation_warning(
 
 @pytest.mark.parametrize("use_size_deltas_report_folder_name", [True, False])
 def test_main_size_deltas_report_folder_name_deprecation(
-    capsys, monkeypatch, setup_action_inputs, stub_compilesketches_object, use_size_deltas_report_folder_name
+    capsys,
+    monkeypatch,
+    setup_action_inputs,
+    stub_compilesketches_object,
+    use_size_deltas_report_folder_name,
 ):
     size_deltas_report_folder_name = "foo-size-deltas-report-folder-name"
     if use_size_deltas_report_folder_name:
-        monkeypatch.setenv("INPUT_SIZE-DELTAS-REPORT-FOLDER-NAME", size_deltas_report_folder_name)
+        monkeypatch.setenv(
+            "INPUT_SIZE-DELTAS-REPORT-FOLDER-NAME", size_deltas_report_folder_name
+        )
 
     compilesketches.main()
 
@@ -199,7 +231,11 @@ def test_main_size_deltas_report_folder_name_deprecation(
 
 @pytest.mark.parametrize("use_enable_size_deltas_report", [True, False])
 def test_main_enable_size_deltas_report_deprecation(
-    capsys, monkeypatch, setup_action_inputs, stub_compilesketches_object, use_enable_size_deltas_report
+    capsys,
+    monkeypatch,
+    setup_action_inputs,
+    stub_compilesketches_object,
+    use_enable_size_deltas_report,
 ):
     enable_size_deltas_report = "foo-enable-size-deltas-report"
     if use_enable_size_deltas_report:
@@ -210,7 +246,8 @@ def test_main_enable_size_deltas_report_deprecation(
     expected_output = ""
     if use_enable_size_deltas_report:
         expected_output = (
-            expected_output + "::warning::The enable-size-deltas-report input is deprecated. Use the equivalent input: "
+            expected_output
+            + "::warning::The enable-size-deltas-report input is deprecated. Use the equivalent input: "
             "enable-deltas-report instead."
         )
 
@@ -229,7 +266,9 @@ def test_main(mocker, setup_action_inputs):
         def compile_sketches(self):
             pass  # pragma: no cover
 
-    mocker.patch("compilesketches.CompileSketches", autospec=True, return_value=CompileSketches())
+    mocker.patch(
+        "compilesketches.CompileSketches", autospec=True, return_value=CompileSketches()
+    )
     mocker.patch.object(CompileSketches, "compile_sketches")
 
     compilesketches.main()
@@ -272,7 +311,9 @@ def test_compilesketches():
     sketches_report_path = "FooSketchesReportFolder"
 
     with unittest.mock.patch(
-        "compilesketches.CompileSketches.get_deltas_base_ref", autospec=True, return_value=expected_deltas_base_ref
+        "compilesketches.CompileSketches.get_deltas_base_ref",
+        autospec=True,
+        return_value=expected_deltas_base_ref,
     ):
         compile_sketches = compilesketches.CompileSketches(
             cli_version=cli_version,
@@ -299,22 +340,32 @@ def test_compilesketches():
     assert compile_sketches.deltas_base_ref == expected_deltas_base_ref
     assert compile_sketches.enable_deltas_report is True
     assert compile_sketches.enable_warnings_report is True
-    assert compile_sketches.sketches_report_path == pathlib.PurePath(sketches_report_path)
+    assert compile_sketches.sketches_report_path == pathlib.PurePath(
+        sketches_report_path
+    )
 
     assert get_compilesketches_object(cli_compile_flags="").cli_compile_flags is None
-    assert get_compilesketches_object(cli_compile_flags="- --foo").cli_compile_flags == ["--foo"]
-    assert get_compilesketches_object(cli_compile_flags='- --foo\n- "bar baz"').cli_compile_flags == [
+    assert get_compilesketches_object(
+        cli_compile_flags="- --foo"
+    ).cli_compile_flags == ["--foo"]
+    assert get_compilesketches_object(
+        cli_compile_flags='- --foo\n- "bar baz"'
+    ).cli_compile_flags == [
         "--foo",
         "bar baz",
     ]
 
     # Test invalid enable_deltas_report value
     with pytest.raises(expected_exception=SystemExit, match="1"):
-        get_compilesketches_object(enable_deltas_report="fooInvalidEnableSizeDeltasBoolean")
+        get_compilesketches_object(
+            enable_deltas_report="fooInvalidEnableSizeDeltasBoolean"
+        )
 
     # Test invalid enable_deltas_report value
     with pytest.raises(expected_exception=SystemExit, match="1"):
-        get_compilesketches_object(enable_warnings_report="fooInvalidEnableWarningsReportBoolean")
+        get_compilesketches_object(
+            enable_warnings_report="fooInvalidEnableWarningsReportBoolean"
+        )
 
     # Test deltas_base_ref when size deltas report is disabled
     compile_sketches = get_compilesketches_object(enable_deltas_report="false")
@@ -337,7 +388,9 @@ def test_get_deltas_base_ref(monkeypatch, mocker, event_name, expected_ref):
         return_value=unittest.mock.sentinel.pull_request_base_ref,
     )
     mocker.patch(
-        "compilesketches.get_parent_commit_ref", autospec=True, return_value=unittest.mock.sentinel.parent_commit_ref
+        "compilesketches.get_parent_commit_ref",
+        autospec=True,
+        return_value=unittest.mock.sentinel.parent_commit_ref,
     )
 
     compile_sketches = get_compilesketches_object()
@@ -361,7 +414,9 @@ def test_get_pull_request_base_ref(monkeypatch, mocker):
             pass  # pragma: no cover
 
     github_api_object = Github()
-    monkeypatch.setenv("GITHUB_EVENT_PATH", str(test_data_path.joinpath("githubevent.json")))
+    monkeypatch.setenv(
+        "GITHUB_EVENT_PATH", str(test_data_path.joinpath("githubevent.json"))
+    )
     monkeypatch.setenv("GITHUB_REPOSITORY", "fooRepository/fooOwner")
 
     mocker.patch.object(Github, "get_repo", return_value=Github())
@@ -369,13 +424,22 @@ def test_get_pull_request_base_ref(monkeypatch, mocker):
 
     compile_sketches = get_compilesketches_object(github_api=github_api_object)
 
-    assert compile_sketches.get_pull_request_base_ref() == unittest.mock.sentinel.pull_request_base_ref
+    assert (
+        compile_sketches.get_pull_request_base_ref()
+        == unittest.mock.sentinel.pull_request_base_ref
+    )
 
-    github_api_object.get_repo.assert_called_once_with(full_name_or_id=os.environ["GITHUB_REPOSITORY"])
-    github_api_object.get_pull.assert_called_once_with(number=42)  # PR number is hardcoded into test file
+    github_api_object.get_repo.assert_called_once_with(
+        full_name_or_id=os.environ["GITHUB_REPOSITORY"]
+    )
+    github_api_object.get_pull.assert_called_once_with(
+        number=42
+    )  # PR number is hardcoded into test file
 
     mocker.patch.object(
-        Github, "get_repo", side_effect=github.UnknownObjectException(status=42, data="foo", headers=None)
+        Github,
+        "get_repo",
+        side_effect=github.UnknownObjectException(status=42, data="foo", headers=None),
     )
     with pytest.raises(expected_exception=SystemExit, match="1"):
         compile_sketches.get_pull_request_base_ref()
@@ -400,7 +464,10 @@ def test_get_parent_commit_ref(mocker):
     git.Repo.assert_called_once_with(path=os.environ["GITHUB_WORKSPACE"])
 
 
-@pytest.mark.parametrize("enable_warnings_report, expected_clean_build_cache", [("true", True), ("false", False)])
+@pytest.mark.parametrize(
+    "enable_warnings_report, expected_clean_build_cache",
+    [("true", True), ("false", False)],
+)
 @pytest.mark.parametrize(
     "compilation_success_list, expected_success",
     [
@@ -411,26 +478,56 @@ def test_get_parent_commit_ref(mocker):
     ],
 )
 def test_compile_sketches(
-    mocker, enable_warnings_report, expected_clean_build_cache, compilation_success_list, expected_success
+    mocker,
+    enable_warnings_report,
+    expected_clean_build_cache,
+    compilation_success_list,
+    expected_success,
 ):
-    sketch_list = [unittest.mock.sentinel.sketch1, unittest.mock.sentinel.sketch2, unittest.mock.sentinel.sketch3]
+    sketch_list = [
+        unittest.mock.sentinel.sketch1,
+        unittest.mock.sentinel.sketch2,
+        unittest.mock.sentinel.sketch3,
+    ]
 
     compilation_result_list = []
     for success in compilation_success_list:
-        compilation_result_list.append(type("CompilationResult", (), {"success": success}))
+        compilation_result_list.append(
+            type("CompilationResult", (), {"success": success})
+        )
     sketch_report = unittest.mock.sentinel.sketch_report
     sketches_report = unittest.mock.sentinel.sketch_report_from_sketches_report
 
-    compile_sketches = get_compilesketches_object(enable_warnings_report=enable_warnings_report)
+    compile_sketches = get_compilesketches_object(
+        enable_warnings_report=enable_warnings_report
+    )
 
     mocker.patch("compilesketches.CompileSketches.install_arduino_cli", autospec=True)
     mocker.patch("compilesketches.CompileSketches.install_platforms", autospec=True)
     mocker.patch("compilesketches.CompileSketches.install_libraries", autospec=True)
-    mocker.patch("compilesketches.CompileSketches.find_sketches", autospec=True, return_value=sketch_list)
-    mocker.patch("compilesketches.CompileSketches.compile_sketch", autospec=True, side_effect=compilation_result_list)
-    mocker.patch("compilesketches.CompileSketches.get_sketch_report", autospec=True, return_value=sketch_report)
-    mocker.patch("compilesketches.CompileSketches.get_sketches_report", autospec=True, return_value=sketches_report)
-    mocker.patch("compilesketches.CompileSketches.create_sketches_report_file", autospec=True)
+    mocker.patch(
+        "compilesketches.CompileSketches.find_sketches",
+        autospec=True,
+        return_value=sketch_list,
+    )
+    mocker.patch(
+        "compilesketches.CompileSketches.compile_sketch",
+        autospec=True,
+        side_effect=compilation_result_list,
+    )
+    mocker.patch(
+        "compilesketches.CompileSketches.get_sketch_report",
+        autospec=True,
+        return_value=sketch_report,
+    )
+    mocker.patch(
+        "compilesketches.CompileSketches.get_sketches_report",
+        autospec=True,
+        return_value=sketches_report,
+    )
+    mocker.patch(
+        "compilesketches.CompileSketches.create_sketches_report_file", autospec=True
+    )
 
     if expected_success:
         compile_sketches.compile_sketches()
@@ -448,9 +545,15 @@ def test_compile_sketches(
     sketch_report_list = []
     for sketch, compilation_result in zip(sketch_list, compilation_result_list):
         compile_sketch_calls.append(
-            unittest.mock.call(compile_sketches, sketch_path=sketch, clean_build_cache=expected_clean_build_cache)
+            unittest.mock.call(
+                compile_sketches,
+                sketch_path=sketch,
+                clean_build_cache=expected_clean_build_cache,
+            )
         )
-        get_sketch_report_calls.append(unittest.mock.call(compile_sketches, compilation_result=compilation_result))
+        get_sketch_report_calls.append(
+            unittest.mock.call(compile_sketches, compilation_result=compilation_result)
+        )
         sketch_report_list.append(sketch_report)
     compile_sketches.compile_sketch.assert_has_calls(calls=compile_sketch_calls)
     compile_sketches.get_sketch_report.assert_has_calls(calls=get_sketch_report_calls)
@@ -467,8 +570,12 @@ def test_compile_sketches(
 def test_install_arduino_cli(mocker):
     cli_version = "1.2.3"
     arduino_cli_installation_path = unittest.mock.sentinel.arduino_cli_installation_path
-    arduino_cli_data_directory_path = pathlib.PurePath("/foo/arduino_cli_data_directory_path")
-    arduino_cli_user_directory_path = pathlib.PurePath("/foo/arduino_cli_user_directory_path")
+    arduino_cli_data_directory_path = pathlib.PurePath(
+        "/foo/arduino_cli_data_directory_path"
+    )
+    arduino_cli_user_directory_path = pathlib.PurePath(
+        "/foo/arduino_cli_user_directory_path"
+    )
 
     compile_sketches = get_compilesketches_object(cli_version=cli_version)
     compile_sketches.arduino_cli_installation_path = arduino_cli_installation_path
@@ -481,14 +588,20 @@ def test_install_arduino_cli(mocker):
 
     compile_sketches.install_from_download.assert_called_once_with(
         compile_sketches,
-        url="https://downloads.arduino.cc/arduino-cli/arduino-cli_" + cli_version + "_Linux_64bit.tar.gz",
+        url="https://downloads.arduino.cc/arduino-cli/arduino-cli_"
+        + cli_version
+        + "_Linux_64bit.tar.gz",
         source_path="arduino-cli",
         destination_parent_path=arduino_cli_installation_path,
         force=False,
     )
 
-    assert os.environ["ARDUINO_DIRECTORIES_USER"] == str(arduino_cli_user_directory_path)
-    assert os.environ["ARDUINO_DIRECTORIES_DATA"] == str(arduino_cli_data_directory_path)
+    assert os.environ["ARDUINO_DIRECTORIES_USER"] == str(
+        arduino_cli_user_directory_path
+    )
+    assert os.environ["ARDUINO_DIRECTORIES_DATA"] == str(
+        arduino_cli_data_directory_path
+    )
     del os.environ["ARDUINO_DIRECTORIES_USER"]
     del os.environ["ARDUINO_DIRECTORIES_DATA"]
 
@@ -514,11 +627,25 @@ def test_install_platforms(mocker, platforms):
         autospec=True,
         return_value=fqbn_platform_dependency,
     )
-    mocker.patch("compilesketches.CompileSketches.sort_dependency_list", autospec=True, return_value=dependency_list)
-    mocker.patch("compilesketches.CompileSketches.install_platforms_from_board_manager", autospec=True)
-    mocker.patch("compilesketches.CompileSketches.install_platforms_from_path", autospec=True)
-    mocker.patch("compilesketches.CompileSketches.install_platforms_from_repository", autospec=True)
-    mocker.patch("compilesketches.CompileSketches.install_platforms_from_download", autospec=True)
+    mocker.patch(
+        "compilesketches.CompileSketches.sort_dependency_list",
+        autospec=True,
+        return_value=dependency_list,
+    )
+    mocker.patch(
+        "compilesketches.CompileSketches.install_platforms_from_board_manager",
+        autospec=True,
+    )
+    mocker.patch(
+        "compilesketches.CompileSketches.install_platforms_from_path", autospec=True
+    )
+    mocker.patch(
+        "compilesketches.CompileSketches.install_platforms_from_repository",
+        autospec=True,
+    )
+    mocker.patch(
+        "compilesketches.CompileSketches.install_platforms_from_download", autospec=True
+    )
 
     compile_sketches.install_platforms()
 
@@ -558,16 +685,21 @@ def test_install_platforms(mocker, platforms):
         ("arduino:avr:nano:cpu=atmega328old", "arduino:avr", None),
     ],
 )
-def test_get_fqbn_platform_dependency(fqbn_arg, expected_platform, expected_additional_url):
+def test_get_fqbn_platform_dependency(
+    fqbn_arg, expected_platform, expected_additional_url
+):
     compile_sketches = get_compilesketches_object(fqbn_arg=fqbn_arg)
 
     fqbn_platform_dependency = compile_sketches.get_fqbn_platform_dependency()
 
-    assert fqbn_platform_dependency[compilesketches.CompileSketches.dependency_name_key] == expected_platform
+    assert (
+        fqbn_platform_dependency[compilesketches.CompileSketches.dependency_name_key]
+        == expected_platform
+    )
     if expected_additional_url is not None:
-        assert fqbn_platform_dependency[compilesketches.CompileSketches.dependency_source_url_key] == (
-            expected_additional_url
-        )
+        assert fqbn_platform_dependency[
+            compilesketches.CompileSketches.dependency_source_url_key
+        ] == (expected_additional_url)
 
 
 @pytest.mark.parametrize(
@@ -575,17 +707,45 @@ def test_get_fqbn_platform_dependency(fqbn_arg, expected_platform, expected_addi
     [
         ([None], []),
         (
-            [{compilesketches.CompileSketches.dependency_source_url_key: "https://example.com/foo/bar.git"}],
+            [
+                {
+                    compilesketches.CompileSketches.dependency_source_url_key: "https://example.com/foo/bar.git"
+                }
+            ],
             ["repository"],
         ),
         (
-            [{compilesketches.CompileSketches.dependency_source_url_key: "https://example.com/foo/bar.git/"}],
+            [
+                {
+                    compilesketches.CompileSketches.dependency_source_url_key: "https://example.com/foo/bar.git/"
+                }
+            ],
             ["repository"],
         ),
-        ([{compilesketches.CompileSketches.dependency_source_url_key: "git://example.com/foo/bar"}], ["repository"]),
-        ([{compilesketches.CompileSketches.dependency_source_url_key: "https://example.com/foo/bar"}], ["download"]),
-        ([{compilesketches.CompileSketches.dependency_source_path_key: "foo/bar"}], ["path"]),
-        ([{compilesketches.CompileSketches.dependency_name_key: "FooBar"}], ["manager"]),
+        (
+            [
+                {
+                    compilesketches.CompileSketches.dependency_source_url_key: "git://example.com/foo/bar"
+                }
+            ],
+            ["repository"],
+        ),
+        (
+            [
+                {
+                    compilesketches.CompileSketches.dependency_source_url_key: "https://example.com/foo/bar"
+                }
+            ],
+            ["download"],
+        ),
+        (
+            [{compilesketches.CompileSketches.dependency_source_path_key: "foo/bar"}],
+            ["path"],
+        ),
+        (
+            [{compilesketches.CompileSketches.dependency_name_key: "FooBar"}],
+            ["manager"],
+        ),
         (
             [
                 {
@@ -597,22 +757,36 @@ def test_get_fqbn_platform_dependency(fqbn_arg, expected_platform, expected_addi
         ),
         (
             [
-                {compilesketches.CompileSketches.dependency_source_url_key: "git://example.com/foo/bar"},
-                {compilesketches.CompileSketches.dependency_source_url_key: "https://example.com/foo/bar"},
+                {
+                    compilesketches.CompileSketches.dependency_source_url_key: "git://example.com/foo/bar"
+                },
+                {
+                    compilesketches.CompileSketches.dependency_source_url_key: "https://example.com/foo/bar"
+                },
                 {compilesketches.CompileSketches.dependency_source_path_key: "foo/bar"},
                 {compilesketches.CompileSketches.dependency_name_key: "FooBar"},
             ],
             ["repository", "download", "path", "manager"],
         ),
-        ([{compilesketches.CompileSketches.dependency_source_url_key: "git://example.com/foo/bar"}], ["repository"]),
+        (
+            [
+                {
+                    compilesketches.CompileSketches.dependency_source_url_key: "git://example.com/foo/bar"
+                }
+            ],
+            ["repository"],
+        ),
     ],
 )
 def test_sort_dependency_list(dependency_list, expected_dependency_type_list):
     compile_sketches = get_compilesketches_object()
 
-    for dependency, expected_dependency_type in zip(dependency_list, expected_dependency_type_list):
+    for dependency, expected_dependency_type in zip(
+        dependency_list, expected_dependency_type_list
+    ):
         assert dependency in getattr(
-            compile_sketches.sort_dependency_list(dependency_list=[dependency]), expected_dependency_type
+            compile_sketches.sort_dependency_list(dependency_list=[dependency]),
+            expected_dependency_type,
         )
 
 
@@ -640,18 +814,43 @@ def test_sort_dependency_list(dependency_list, expected_dependency_type_list):
                 },
             ],
             [
-                ["core", "update-index", "--additional-urls", "https://example.com/package_foo_index.json"],
-                ["core", "update-index", "--additional-urls", "https://example.com/package_bar_index.json"],
+                [
+                    "core",
+                    "update-index",
+                    "--additional-urls",
+                    "https://example.com/package_foo_index.json",
+                ],
+                [
+                    "core",
+                    "update-index",
+                    "--additional-urls",
+                    "https://example.com/package_bar_index.json",
+                ],
             ],
             [
-                ["core", "install", "--additional-urls", "https://example.com/package_foo_index.json", "Foo"],
-                ["core", "install", "--additional-urls", "https://example.com/package_bar_index.json", "Bar"],
+                [
+                    "core",
+                    "install",
+                    "--additional-urls",
+                    "https://example.com/package_foo_index.json",
+                    "Foo",
+                ],
+                [
+                    "core",
+                    "install",
+                    "--additional-urls",
+                    "https://example.com/package_bar_index.json",
+                    "Bar",
+                ],
             ],
         ),
     ],
 )
 def test_install_platforms_from_board_manager(
-    mocker, platform_list, expected_core_update_index_command_list, expected_core_install_command_list
+    mocker,
+    platform_list,
+    expected_core_update_index_command_list,
+    expected_core_install_command_list,
 ):
     run_command_output_level = unittest.mock.sentinel.run_command_output_level
 
@@ -662,7 +861,9 @@ def test_install_platforms_from_board_manager(
         autospec=True,
         return_value=run_command_output_level,
     )
-    mocker.patch("compilesketches.CompileSketches.run_arduino_cli_command", autospec=True)
+    mocker.patch(
+        "compilesketches.CompileSketches.run_arduino_cli_command", autospec=True
+    )
 
     compile_sketches.install_platforms_from_board_manager(platform_list=platform_list)
 
@@ -673,15 +874,21 @@ def test_install_platforms_from_board_manager(
         run_arduino_cli_command_calls.extend(
             [
                 unittest.mock.call(
-                    compile_sketches, command=expected_core_update_index_command, enable_output=run_command_output_level
+                    compile_sketches,
+                    command=expected_core_update_index_command,
+                    enable_output=run_command_output_level,
                 ),
                 unittest.mock.call(
-                    compile_sketches, command=expected_core_install_command, enable_output=run_command_output_level
+                    compile_sketches,
+                    command=expected_core_install_command,
+                    enable_output=run_command_output_level,
                 ),
             ]
         )
 
-    compile_sketches.run_arduino_cli_command.assert_has_calls(calls=run_arduino_cli_command_calls)
+    compile_sketches.run_arduino_cli_command.assert_has_calls(
+        calls=run_arduino_cli_command_calls
+    )
 
 
 @pytest.mark.parametrize(
@@ -710,16 +917,24 @@ def test_run_arduino_cli_command(mocker, verbose):
 
     compile_sketches.arduino_cli_installation_path = arduino_cli_installation_path
 
-    mocker.patch("compilesketches.CompileSketches.run_command", autospec=True, return_value=run_command_return)
+    mocker.patch(
+        "compilesketches.CompileSketches.run_command",
+        autospec=True,
+        return_value=run_command_return,
+    )
 
     assert (
         compile_sketches.run_arduino_cli_command(
-            command=command, enable_output=enable_output, exit_on_failure=exit_on_failure
+            command=command,
+            enable_output=enable_output,
+            exit_on_failure=exit_on_failure,
         )
         == run_command_return
     )
 
-    expected_run_command_command = [arduino_cli_installation_path.joinpath("arduino-cli")]
+    expected_run_command_command = [
+        arduino_cli_installation_path.joinpath("arduino-cli")
+    ]
     expected_run_command_command.extend(command)
     if verbose:
         expected_run_command_command.extend(["--log-level", "warn", "--verbose"])
@@ -743,7 +958,9 @@ def test_run_arduino_cli_command(mocker, verbose):
     "exit_on_failure, returncode, expected_success",
     [(False, 0, True), (False, 1, True), (True, 0, True), (True, 1, False)],
 )
-def test_run_command(capsys, mocker, enable_output, exit_on_failure, returncode, expected_success):
+def test_run_command(
+    capsys, mocker, enable_output, exit_on_failure, returncode, expected_success
+):
     command = unittest.mock.sentinel.command
 
     # Stub
@@ -761,13 +978,19 @@ def test_run_command(capsys, mocker, enable_output, exit_on_failure, returncode,
 
     if expected_success:
         run_command_output = compile_sketches.run_command(
-            command=command, enable_output=enable_output, exit_on_failure=exit_on_failure
+            command=command,
+            enable_output=enable_output,
+            exit_on_failure=exit_on_failure,
         )
         assert run_command_output == command_data
 
     else:
         with pytest.raises(expected_exception=SystemExit, match=str(returncode)):
-            compile_sketches.run_command(command=command, enable_output=enable_output, exit_on_failure=exit_on_failure)
+            compile_sketches.run_command(
+                command=command,
+                enable_output=enable_output,
+                exit_on_failure=exit_on_failure,
+            )
 
     expected_output = (
         "::group::Running command: "
@@ -790,7 +1013,9 @@ def test_run_command(capsys, mocker, enable_output, exit_on_failure, returncode,
     assert capsys.readouterr().out.strip() == expected_output
 
     # noinspection PyUnresolvedReferences
-    subprocess.run.assert_called_once_with(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    subprocess.run.assert_called_once_with(
+        command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
+    )
 
 
 @pytest.mark.parametrize(
@@ -810,20 +1035,44 @@ def test_run_command(capsys, mocker, enable_output, exit_on_failure, returncode,
             },
             "Foo",
         ),
-        ({compilesketches.CompileSketches.dependency_name_key: "Foo@1.2.3"}, "Foo@1.2.3"),
+        (
+            {compilesketches.CompileSketches.dependency_name_key: "Foo@1.2.3"},
+            "Foo@1.2.3",
+        ),
         ({compilesketches.CompileSketches.dependency_name_key: "Foo"}, "Foo"),
     ],
 )
 def test_get_manager_dependency_name(dependency, expected_name):
     compile_sketches = get_compilesketches_object()
-    assert compile_sketches.get_manager_dependency_name(dependency=dependency) == expected_name
+    assert (
+        compile_sketches.get_manager_dependency_name(dependency=dependency)
+        == expected_name
+    )
 
 
 @pytest.mark.parametrize(
     "path_exists, platform_list",
     [
-        (False, [{compilesketches.CompileSketches.dependency_source_path_key: pathlib.Path("Foo")}]),
-        (True, [{compilesketches.CompileSketches.dependency_source_path_key: pathlib.Path("Foo")}]),
+        (
+            False,
+            [
+                {
+                    compilesketches.CompileSketches.dependency_source_path_key: pathlib.Path(
+                        "Foo"
+                    )
+                }
+            ],
+        ),
+        (
+            True,
+            [
+                {
+                    compilesketches.CompileSketches.dependency_source_path_key: pathlib.Path(
+                        "Foo"
+                    )
+                }
+            ],
+        ),
     ],
 )
 def test_install_platforms_from_path(capsys, mocker, path_exists, platform_list):
@@ -833,7 +1082,9 @@ def test_install_platforms_from_path(capsys, mocker, path_exists, platform_list)
             self.is_overwrite = False
 
     platform_installation_path = PlatformInstallationPath()
-    platform_installation_path.path = pathlib.Path("/foo/PlatformInstallationPathParent/PlatformInstallationPathName")
+    platform_installation_path.path = pathlib.Path(
+        "/foo/PlatformInstallationPathParent/PlatformInstallationPathName"
+    )
 
     compile_sketches = get_compilesketches_object()
 
@@ -851,7 +1102,11 @@ def test_install_platforms_from_path(capsys, mocker, path_exists, platform_list)
 
         assert capsys.readouterr().out.strip() == (
             "::error::Platform source path: "
-            + str(platform_list[0][compilesketches.CompileSketches.dependency_source_path_key])
+            + str(
+                platform_list[0][
+                    compilesketches.CompileSketches.dependency_source_path_key
+                ]
+            )
             + " doesn't exist"
         )
 
@@ -861,12 +1116,16 @@ def test_install_platforms_from_path(capsys, mocker, path_exists, platform_list)
         get_platform_installation_path_calls = []
         install_from_path_calls = []
         for platform in platform_list:
-            get_platform_installation_path_calls.append(unittest.mock.call(compile_sketches, platform=platform))
+            get_platform_installation_path_calls.append(
+                unittest.mock.call(compile_sketches, platform=platform)
+            )
             install_from_path_calls.append(
                 unittest.mock.call(
                     compile_sketches,
                     source_path=compilesketches.absolute_path(
-                        platform[compilesketches.CompileSketches.dependency_source_path_key]
+                        platform[
+                            compilesketches.CompileSketches.dependency_source_path_key
+                        ]
                     ),
                     destination_parent_path=platform_installation_path.path.parent,
                     destination_name=platform_installation_path.path.name,
@@ -875,13 +1134,17 @@ def test_install_platforms_from_path(capsys, mocker, path_exists, platform_list)
             )
 
         # noinspection PyUnresolvedReferences
-        compile_sketches.get_platform_installation_path.assert_has_calls(calls=get_platform_installation_path_calls)
+        compile_sketches.get_platform_installation_path.assert_has_calls(
+            calls=get_platform_installation_path_calls
+        )
         # noinspection PyUnresolvedReferences
-        compile_sketches.install_from_path.assert_has_calls(calls=install_from_path_calls)
+        compile_sketches.install_from_path.assert_has_calls(
+            calls=install_from_path_calls
+        )
 
 
 @pytest.mark.parametrize(
-    "platform," "command_data_stdout," "expected_installation_path",
+    "platform,command_data_stdout,expected_installation_path",
     # No match to previously installed platforms
     [
         (
@@ -897,27 +1160,41 @@ def test_install_platforms_from_path(capsys, mocker, path_exists, platform_list)
         ),
     ],
 )
-def test_get_platform_installation_path(mocker, platform, command_data_stdout, expected_installation_path):
+def test_get_platform_installation_path(
+    mocker, platform, command_data_stdout, expected_installation_path
+):
     class CommandData:
         def __init__(self, stdout):
             self.stdout = stdout
 
     command_data = CommandData(stdout=command_data_stdout)
 
-    mocker.patch("compilesketches.CompileSketches.run_arduino_cli_command", autospec=True, return_value=command_data)
+    mocker.patch(
+        "compilesketches.CompileSketches.run_arduino_cli_command",
+        autospec=True,
+        return_value=command_data,
+    )
 
     compile_sketches = get_compilesketches_object()
     compile_sketches.user_platforms_path = pathlib.PurePath("/foo/UserPlatformsPath")
-    compile_sketches.board_manager_platforms_path = pathlib.PurePath("/foo/BoardManagerPlatformsPath")
+    compile_sketches.board_manager_platforms_path = pathlib.PurePath(
+        "/foo/BoardManagerPlatformsPath"
+    )
 
-    platform_installation_path = compile_sketches.get_platform_installation_path(platform=platform)
+    platform_installation_path = compile_sketches.get_platform_installation_path(
+        platform=platform
+    )
     assert platform_installation_path.path == expected_installation_path
 
     run_arduino_cli_command_calls = [
         unittest.mock.call(compile_sketches, command=["core", "update-index"]),
-        unittest.mock.call(compile_sketches, command=["core", "list", "--format", "json"]),
+        unittest.mock.call(
+            compile_sketches, command=["core", "list", "--format", "json"]
+        ),
     ]
-    compilesketches.CompileSketches.run_arduino_cli_command.assert_has_calls(calls=run_arduino_cli_command_calls)
+    compilesketches.CompileSketches.run_arduino_cli_command.assert_has_calls(
+        calls=run_arduino_cli_command_calls
+    )
 
 
 def test_install_platforms_from_repository(mocker):
@@ -927,7 +1204,9 @@ def test_install_platforms_from_repository(mocker):
             compilesketches.CompileSketches.dependency_source_path_key: unittest.mock.sentinel.source_path,
             compilesketches.CompileSketches.dependency_destination_name_key: unittest.mock.sentinel.destination_name,
         },
-        {compilesketches.CompileSketches.dependency_source_url_key: unittest.mock.sentinel.source_url2},
+        {
+            compilesketches.CompileSketches.dependency_source_url_key: unittest.mock.sentinel.source_url2
+        },
     ]
 
     git_ref = unittest.mock.sentinel.git_ref
@@ -938,20 +1217,30 @@ def test_install_platforms_from_repository(mocker):
             self.is_overwrite = False
 
     platform_installation_path = PlatformInstallationPath()
-    platform_installation_path.path = pathlib.Path("/foo/PlatformInstallationPathParent/PlatformInstallationPathName")
+    platform_installation_path.path = pathlib.Path(
+        "/foo/PlatformInstallationPathParent/PlatformInstallationPathName"
+    )
 
     expected_source_path_list = [unittest.mock.sentinel.source_path, "."]
     expected_destination_name_list = [unittest.mock.sentinel.destination_name, None]
 
     compile_sketches = get_compilesketches_object()
 
-    mocker.patch("compilesketches.CompileSketches.get_repository_dependency_ref", autospec=True, return_value=git_ref)
+    mocker.patch(
+        "compilesketches.CompileSketches.get_repository_dependency_ref",
+        autospec=True,
+        return_value=git_ref,
+    )
     mocker.patch(
         "compilesketches.CompileSketches.get_platform_installation_path",
         autospec=True,
         return_value=platform_installation_path,
     )
-    mocker.patch("compilesketches.CompileSketches.install_from_repository", autospec=True, return_value=git_ref)
+    mocker.patch(
+        "compilesketches.CompileSketches.install_from_repository",
+        autospec=True,
+        return_value=git_ref,
+    )
 
     compile_sketches.install_platforms_from_repository(platform_list=platform_list)
 
@@ -961,8 +1250,12 @@ def test_install_platforms_from_repository(mocker):
     for platform, expected_source_path, expected_destination_name in zip(
         platform_list, expected_source_path_list, expected_destination_name_list
     ):
-        get_repository_dependency_ref_calls.append(unittest.mock.call(compile_sketches, dependency=platform))
-        get_platform_installation_path_calls.append(unittest.mock.call(compile_sketches, platform=platform))
+        get_repository_dependency_ref_calls.append(
+            unittest.mock.call(compile_sketches, dependency=platform)
+        )
+        get_platform_installation_path_calls.append(
+            unittest.mock.call(compile_sketches, platform=platform)
+        )
         install_from_repository_calls.append(
             unittest.mock.call(
                 compile_sketches,
@@ -975,17 +1268,27 @@ def test_install_platforms_from_repository(mocker):
             )
         )
 
-    compile_sketches.get_repository_dependency_ref.assert_has_calls(calls=get_repository_dependency_ref_calls)
-    compile_sketches.install_from_repository.assert_has_calls(calls=install_from_repository_calls)
+    compile_sketches.get_repository_dependency_ref.assert_has_calls(
+        calls=get_repository_dependency_ref_calls
+    )
+    compile_sketches.install_from_repository.assert_has_calls(
+        calls=install_from_repository_calls
+    )
 
 
 @pytest.mark.parametrize(
     "dependency, expected_ref",
-    [({compilesketches.CompileSketches.dependency_version_key: "1.2.3"}, "1.2.3"), ({}, None)],
+    [
+        ({compilesketches.CompileSketches.dependency_version_key: "1.2.3"}, "1.2.3"),
+        ({}, None),
+    ],
 )
 def test_get_repository_dependency_ref(dependency, expected_ref):
     compile_sketches = get_compilesketches_object()
-    assert compile_sketches.get_repository_dependency_ref(dependency=dependency) == expected_ref
+    assert (
+        compile_sketches.get_repository_dependency_ref(dependency=dependency)
+        == expected_ref
+    )
 
 
 def test_install_platforms_from_download(mocker):
@@ -995,7 +1298,9 @@ def test_install_platforms_from_download(mocker):
             compilesketches.CompileSketches.dependency_source_path_key: unittest.mock.sentinel.source_path,
             compilesketches.CompileSketches.dependency_destination_name_key: unittest.mock.sentinel.destination_name,
         },
-        {compilesketches.CompileSketches.dependency_source_url_key: unittest.mock.sentinel.source_url2},
+        {
+            compilesketches.CompileSketches.dependency_source_url_key: unittest.mock.sentinel.source_url2
+        },
     ]
 
     class PlatformInstallationPath:
@@ -1004,7 +1309,9 @@ def test_install_platforms_from_download(mocker):
             self.is_overwrite = False
 
     platform_installation_path = PlatformInstallationPath()
-    platform_installation_path.path = pathlib.Path("/foo/PlatformInstallationPathParent/PlatformInstallationPathName")
+    platform_installation_path.path = pathlib.Path(
+        "/foo/PlatformInstallationPathParent/PlatformInstallationPathName"
+    )
 
     expected_source_path_list = [unittest.mock.sentinel.source_path, "."]
 
@@ -1025,7 +1332,9 @@ def test_install_platforms_from_download(mocker):
         platform,
         expected_source_path,
     ) in zip(platform_list, expected_source_path_list):
-        get_platform_installation_path_calls.append(unittest.mock.call(compile_sketches, platform=platform))
+        get_platform_installation_path_calls.append(
+            unittest.mock.call(compile_sketches, platform=platform)
+        )
         install_from_download_calls.append(
             unittest.mock.call(
                 compile_sketches,
@@ -1036,7 +1345,9 @@ def test_install_platforms_from_download(mocker):
                 force=platform_installation_path.is_overwrite,
             )
         )
-    compile_sketches.install_from_download.assert_has_calls(calls=install_from_download_calls)
+    compile_sketches.install_from_download.assert_has_calls(
+        calls=install_from_download_calls
+    )
 
 
 @pytest.mark.parametrize(
@@ -1045,7 +1356,13 @@ def test_install_platforms_from_download(mocker):
         (
             "",
             [],
-            [{compilesketches.CompileSketches.dependency_source_path_key: os.environ["GITHUB_WORKSPACE"]}],
+            [
+                {
+                    compilesketches.CompileSketches.dependency_source_path_key: os.environ[
+                        "GITHUB_WORKSPACE"
+                    ]
+                }
+            ],
             [],
             [],
         ),
@@ -1055,7 +1372,13 @@ def test_install_platforms_from_download(mocker):
                 {compilesketches.CompileSketches.dependency_name_key: "foo"},
                 {compilesketches.CompileSketches.dependency_name_key: "bar"},
             ],
-            [{compilesketches.CompileSketches.dependency_source_path_key: os.environ["GITHUB_WORKSPACE"]}],
+            [
+                {
+                    compilesketches.CompileSketches.dependency_source_path_key: os.environ[
+                        "GITHUB_WORKSPACE"
+                    ]
+                }
+            ],
             [],
             [],
         ),
@@ -1065,7 +1388,13 @@ def test_install_platforms_from_download(mocker):
                 {compilesketches.CompileSketches.dependency_name_key: "foo"},
                 {compilesketches.CompileSketches.dependency_name_key: "bar"},
             ],
-            [{compilesketches.CompileSketches.dependency_source_path_key: os.environ["GITHUB_WORKSPACE"]}],
+            [
+                {
+                    compilesketches.CompileSketches.dependency_source_path_key: os.environ[
+                        "GITHUB_WORKSPACE"
+                    ]
+                }
+            ],
             [],
             [],
         ),
@@ -1079,21 +1408,27 @@ def test_install_platforms_from_download(mocker):
             [],
         ),
         (
-            "- " + compilesketches.CompileSketches.dependency_source_path_key + ": /foo/bar",
+            "- "
+            + compilesketches.CompileSketches.dependency_source_path_key
+            + ": /foo/bar",
             [],
             [{compilesketches.CompileSketches.dependency_source_path_key: "/foo/bar"}],
             [],
             [],
         ),
         (
-            "- " + compilesketches.CompileSketches.dependency_source_url_key + ": https://example.com/foo.git",
+            "- "
+            + compilesketches.CompileSketches.dependency_source_url_key
+            + ": https://example.com/foo.git",
             [],
             [],
             [{"source-url": "https://example.com/foo.git"}],
             [],
         ),
         (
-            "- " + compilesketches.CompileSketches.dependency_source_url_key + ": https://example.com/foo.zip",
+            "- "
+            + compilesketches.CompileSketches.dependency_source_url_key
+            + ": https://example.com/foo.zip",
             [],
             [],
             [],
@@ -1101,16 +1436,33 @@ def test_install_platforms_from_download(mocker):
         ),
     ],
 )
-def test_install_libraries(mocker, libraries, expected_manager, expected_path, expected_repository, expected_download):
+def test_install_libraries(
+    mocker,
+    libraries,
+    expected_manager,
+    expected_path,
+    expected_repository,
+    expected_download,
+):
     libraries_path = pathlib.Path("/foo/LibrariesPath")
 
     compile_sketches = get_compilesketches_object(libraries=libraries)
     compile_sketches.libraries_path = libraries_path
 
-    mocker.patch("compilesketches.CompileSketches.install_libraries_from_library_manager", autospec=True)
-    mocker.patch("compilesketches.CompileSketches.install_libraries_from_path", autospec=True)
-    mocker.patch("compilesketches.CompileSketches.install_libraries_from_repository", autospec=True)
-    mocker.patch("compilesketches.CompileSketches.install_libraries_from_download", autospec=True)
+    mocker.patch(
+        "compilesketches.CompileSketches.install_libraries_from_library_manager",
+        autospec=True,
+    )
+    mocker.patch(
+        "compilesketches.CompileSketches.install_libraries_from_path", autospec=True
+    )
+    mocker.patch(
+        "compilesketches.CompileSketches.install_libraries_from_repository",
+        autospec=True,
+    )
+    mocker.patch(
+        "compilesketches.CompileSketches.install_libraries_from_download", autospec=True
+    )
 
     compile_sketches.install_libraries()
 
@@ -1147,14 +1499,19 @@ def test_install_libraries_from_library_manager(mocker):
     run_command_output_level = unittest.mock.sentinel.run_command_output_level
     compile_sketches = get_compilesketches_object()
 
-    library_list = [{compile_sketches.dependency_name_key: "foo"}, {compile_sketches.dependency_name_key: "bar"}]
+    library_list = [
+        {compile_sketches.dependency_name_key: "foo"},
+        {compile_sketches.dependency_name_key: "bar"},
+    ]
 
     mocker.patch(
         "compilesketches.CompileSketches.get_run_command_output_level",
         autospec=True,
         return_value=run_command_output_level,
     )
-    mocker.patch("compilesketches.CompileSketches.run_arduino_cli_command", autospec=True)
+    mocker.patch(
+        "compilesketches.CompileSketches.run_arduino_cli_command", autospec=True
+    )
 
     compile_sketches.install_libraries_from_library_manager(library_list=library_list)
 
@@ -1165,11 +1522,17 @@ def test_install_libraries_from_library_manager(mocker):
         lib_install_command = lib_install_base_command.copy()
         lib_install_command.append(library["name"])
         run_arduino_cli_command_calls.append(
-            unittest.mock.call(compile_sketches, command=lib_install_command, enable_output=run_command_output_level)
+            unittest.mock.call(
+                compile_sketches,
+                command=lib_install_command,
+                enable_output=run_command_output_level,
+            )
         )
 
     # noinspection PyUnresolvedReferences
-    compile_sketches.run_arduino_cli_command.assert_has_calls(calls=run_arduino_cli_command_calls)
+    compile_sketches.run_arduino_cli_command.assert_has_calls(
+        calls=run_arduino_cli_command_calls
+    )
 
 
 @pytest.mark.parametrize(
@@ -1179,7 +1542,9 @@ def test_install_libraries_from_library_manager(mocker):
             False,
             [
                 {
-                    compilesketches.CompileSketches.dependency_source_path_key: os.environ["GITHUB_WORKSPACE"]
+                    compilesketches.CompileSketches.dependency_source_path_key: os.environ[
+                        "GITHUB_WORKSPACE"
+                    ]
                     + "/Nonexistent"
                 }
             ],
@@ -1190,7 +1555,9 @@ def test_install_libraries_from_library_manager(mocker):
             [
                 {
                     compilesketches.CompileSketches.dependency_destination_name_key: "FooName",
-                    compilesketches.CompileSketches.dependency_source_path_key: os.environ["GITHUB_WORKSPACE"]
+                    compilesketches.CompileSketches.dependency_source_path_key: os.environ[
+                        "GITHUB_WORKSPACE"
+                    ]
                     + "/FooLibrary",
                 }
             ],
@@ -1198,18 +1565,36 @@ def test_install_libraries_from_library_manager(mocker):
         ),
         (
             True,
-            [{compilesketches.CompileSketches.dependency_source_path_key: os.environ["GITHUB_WORKSPACE"]}],
+            [
+                {
+                    compilesketches.CompileSketches.dependency_source_path_key: os.environ[
+                        "GITHUB_WORKSPACE"
+                    ]
+                }
+            ],
             ["FooRepoName"],
         ),
         (
             True,
-            [{compilesketches.CompileSketches.dependency_source_path_key: os.environ["GITHUB_WORKSPACE"] + "/Bar"}],
+            [
+                {
+                    compilesketches.CompileSketches.dependency_source_path_key: os.environ[
+                        "GITHUB_WORKSPACE"
+                    ]
+                    + "/Bar"
+                }
+            ],
             [None],
         ),
     ],
 )
 def test_install_libraries_from_path(
-    capsys, monkeypatch, mocker, path_exists, library_list, expected_destination_name_list
+    capsys,
+    monkeypatch,
+    mocker,
+    path_exists,
+    library_list,
+    expected_destination_name_list,
 ):
     libraries_path = pathlib.Path("/foo/LibrariesPath")
 
@@ -1226,7 +1611,11 @@ def test_install_libraries_from_path(
             compile_sketches.install_libraries_from_path(library_list=library_list)
         assert capsys.readouterr().out.strip() == (
             "::error::Library source path: "
-            + str(compilesketches.path_relative_to_workspace(library_list[0]["source-path"]))
+            + str(
+                compilesketches.path_relative_to_workspace(
+                    library_list[0]["source-path"]
+                )
+            )
             + " doesn't exist"
         )
 
@@ -1234,12 +1623,16 @@ def test_install_libraries_from_path(
         compile_sketches.install_libraries_from_path(library_list=library_list)
 
         install_from_path_calls = []
-        for library, expected_destination_name in zip(library_list, expected_destination_name_list):
+        for library, expected_destination_name in zip(
+            library_list, expected_destination_name_list
+        ):
             install_from_path_calls.append(
                 unittest.mock.call(
                     compile_sketches,
                     source_path=compilesketches.absolute_path(
-                        library[compilesketches.CompileSketches.dependency_source_path_key]
+                        library[
+                            compilesketches.CompileSketches.dependency_source_path_key
+                        ]
                     ),
                     destination_parent_path=libraries_path,
                     destination_name=expected_destination_name,
@@ -1248,7 +1641,9 @@ def test_install_libraries_from_path(
             )
 
         # noinspection PyUnresolvedReferences
-        compile_sketches.install_from_path.assert_has_calls(calls=install_from_path_calls)
+        compile_sketches.install_from_path.assert_has_calls(
+            calls=install_from_path_calls
+        )
 
 
 def test_install_libraries_from_repository(mocker):
@@ -1259,15 +1654,25 @@ def test_install_libraries_from_repository(mocker):
             compilesketches.CompileSketches.dependency_source_path_key: unittest.mock.sentinel.source_path,
             compilesketches.CompileSketches.dependency_destination_name_key: unittest.mock.sentinel.destination_name,
         },
-        {compilesketches.CompileSketches.dependency_source_url_key: unittest.mock.sentinel.source_url2},
+        {
+            compilesketches.CompileSketches.dependency_source_url_key: unittest.mock.sentinel.source_url2
+        },
     ]
     expected_source_path_list = [unittest.mock.sentinel.source_path, "."]
     expected_destination_name_list = [unittest.mock.sentinel.destination_name, None]
 
     compile_sketches = get_compilesketches_object()
 
-    mocker.patch("compilesketches.CompileSketches.get_repository_dependency_ref", autospec=True, return_value=git_ref)
-    mocker.patch("compilesketches.CompileSketches.install_from_repository", autospec=True, return_value=git_ref)
+    mocker.patch(
+        "compilesketches.CompileSketches.get_repository_dependency_ref",
+        autospec=True,
+        return_value=git_ref,
+    )
+    mocker.patch(
+        "compilesketches.CompileSketches.install_from_repository",
+        autospec=True,
+        return_value=git_ref,
+    )
 
     compile_sketches.install_libraries_from_repository(library_list=library_list)
 
@@ -1276,7 +1681,9 @@ def test_install_libraries_from_repository(mocker):
     for library, expected_source_path, expected_destination_name in zip(
         library_list, expected_source_path_list, expected_destination_name_list
     ):
-        get_repository_dependency_ref_calls.append(unittest.mock.call(compile_sketches, dependency=library))
+        get_repository_dependency_ref_calls.append(
+            unittest.mock.call(compile_sketches, dependency=library)
+        )
         install_from_repository_calls.append(
             unittest.mock.call(
                 compile_sketches,
@@ -1289,8 +1696,12 @@ def test_install_libraries_from_repository(mocker):
             )
         )
 
-    compile_sketches.get_repository_dependency_ref.assert_has_calls(calls=get_repository_dependency_ref_calls)
-    compile_sketches.install_from_repository.assert_has_calls(calls=install_from_repository_calls)
+    compile_sketches.get_repository_dependency_ref.assert_has_calls(
+        calls=get_repository_dependency_ref_calls
+    )
+    compile_sketches.install_from_repository.assert_has_calls(
+        calls=install_from_repository_calls
+    )
 
 
 def test_install_libraries_from_download(mocker):
@@ -1300,7 +1711,9 @@ def test_install_libraries_from_download(mocker):
             compilesketches.CompileSketches.dependency_source_path_key: unittest.mock.sentinel.source_path,
             compilesketches.CompileSketches.dependency_destination_name_key: unittest.mock.sentinel.destination_name,
         },
-        {compilesketches.CompileSketches.dependency_source_url_key: unittest.mock.sentinel.source_url2},
+        {
+            compilesketches.CompileSketches.dependency_source_url_key: unittest.mock.sentinel.source_url2
+        },
     ]
 
     expected_source_path_list = [unittest.mock.sentinel.source_path, "."]
@@ -1326,14 +1739,18 @@ def test_install_libraries_from_download(mocker):
                 force=True,
             )
         )
-    compile_sketches.install_from_download.assert_has_calls(calls=install_libraries_from_download_calls)
+    compile_sketches.install_from_download.assert_has_calls(
+        calls=install_libraries_from_download_calls
+    )
 
 
 def test_find_sketches(capsys):
     nonexistent_sketch_path = "/foo/NonexistentSketch"
 
     # Test sketch path doesn't exist
-    compile_sketches = get_compilesketches_object(sketch_paths="'\"" + nonexistent_sketch_path + "\"'")
+    compile_sketches = get_compilesketches_object(
+        sketch_paths="'\"" + nonexistent_sketch_path + "\"'"
+    )
     with pytest.raises(expected_exception=SystemExit, match="1"):
         compile_sketches.find_sketches()
     assert capsys.readouterr().out.strip() == (
@@ -1344,25 +1761,39 @@ def test_find_sketches(capsys):
 
     # Test sketch path is a sketch file
     compile_sketches = get_compilesketches_object(
-        sketch_paths="'" + str(test_data_path.joinpath("HasSketches", "Sketch1", "Sketch1.ino")) + "'"
+        sketch_paths="'"
+        + str(test_data_path.joinpath("HasSketches", "Sketch1", "Sketch1.ino"))
+        + "'"
     )
-    assert compile_sketches.find_sketches() == [test_data_path.joinpath("HasSketches", "Sketch1")]
+    assert compile_sketches.find_sketches() == [
+        test_data_path.joinpath("HasSketches", "Sketch1")
+    ]
 
     # Test sketch path is a non-sketch file
-    non_sketch_path = str(test_data_path.joinpath("NoSketches", "NotSketch", "NotSketch.foo"))
-    compile_sketches = get_compilesketches_object(sketch_paths="'" + non_sketch_path + "'")
+    non_sketch_path = str(
+        test_data_path.joinpath("NoSketches", "NotSketch", "NotSketch.foo")
+    )
+    compile_sketches = get_compilesketches_object(
+        sketch_paths="'" + non_sketch_path + "'"
+    )
     with pytest.raises(expected_exception=SystemExit, match="1"):
         compile_sketches.find_sketches()
-    assert capsys.readouterr().out.strip() == ("::error::Sketch path: " + non_sketch_path + " is not a sketch")
+    assert capsys.readouterr().out.strip() == (
+        "::error::Sketch path: " + non_sketch_path + " is not a sketch"
+    )
 
     # Test sketch path is a sketch folder
     compile_sketches = get_compilesketches_object(
         sketch_paths="'" + str(test_data_path.joinpath("HasSketches", "Sketch1")) + "'"
     )
-    assert compile_sketches.find_sketches() == [test_data_path.joinpath("HasSketches", "Sketch1")]
+    assert compile_sketches.find_sketches() == [
+        test_data_path.joinpath("HasSketches", "Sketch1")
+    ]
 
     # Test sketch path does contain sketches
-    compile_sketches = get_compilesketches_object(sketch_paths="'" + str(test_data_path.joinpath("HasSketches")) + "'")
+    compile_sketches = get_compilesketches_object(
+        sketch_paths="'" + str(test_data_path.joinpath("HasSketches")) + "'"
+    )
     assert compile_sketches.find_sketches() == [
         test_data_path.joinpath("HasSketches", "Sketch1"),
         test_data_path.joinpath("HasSketches", "Sketch2"),
@@ -1370,10 +1801,14 @@ def test_find_sketches(capsys):
 
     # Test sketch path doesn't contain any sketches
     no_sketches_path = str(test_data_path.joinpath("NoSketches"))
-    compile_sketches = get_compilesketches_object(sketch_paths="'" + no_sketches_path + "'")
+    compile_sketches = get_compilesketches_object(
+        sketch_paths="'" + no_sketches_path + "'"
+    )
     with pytest.raises(expected_exception=SystemExit, match="1"):
         compile_sketches.find_sketches()
-    assert capsys.readouterr().out.strip() == ("::error::No sketches were found in " + no_sketches_path)
+    assert capsys.readouterr().out.strip() == (
+        "::error::No sketches were found in " + no_sketches_path
+    )
 
 
 @pytest.mark.parametrize(
@@ -1384,11 +1819,19 @@ def test_find_sketches(capsys):
         ("'\"foo bar\" baz'", ["foo bar", "baz"], False),
         ("foo: bar", ["foo:", "bar"], False),
         ("-", [None], True),
-        ("- foo: asdf\n  bar: qwer\n- baz: zxcv", [{"foo": "asdf", "bar": "qwer"}, {"baz": "zxcv"}], True),
+        (
+            "- foo: asdf\n  bar: qwer\n- baz: zxcv",
+            [{"foo": "asdf", "bar": "qwer"}, {"baz": "zxcv"}],
+            True,
+        ),
     ],
 )
-def test_get_list_from_multiformat_input(input_value, expected_list, expected_was_yaml_list):
-    input_list = compilesketches.get_list_from_multiformat_input(input_value=input_value)
+def test_get_list_from_multiformat_input(
+    input_value, expected_list, expected_was_yaml_list
+):
+    input_list = compilesketches.get_list_from_multiformat_input(
+        input_value=input_value
+    )
     assert input_list.value == expected_list
     assert input_list.was_yaml_list == expected_was_yaml_list
 
@@ -1397,7 +1840,12 @@ def test_get_list_from_multiformat_input(input_value, expected_list, expected_wa
 @pytest.mark.parametrize(
     "source_sub_path, destination_parent_sub_path, destination_name, expected_destination_sub_path",
     [
-        ("foo/source-path", "bar/destination-parent-path", None, "bar/destination-parent-path/source-path"),
+        (
+            "foo/source-path",
+            "bar/destination-parent-path",
+            None,
+            "bar/destination-parent-path/source-path",
+        ),
         (
             "foo/source-path",
             "bar/destination-parent-path",
@@ -1444,9 +1892,13 @@ def test_install_from_path(
             # source_path.parent.mkdir(parents=True)
             destination_path.touch()
     elif exists == "symlink":
-        destination_path.symlink_to(target=source_path, target_is_directory=source_path.is_dir())
+        destination_path.symlink_to(
+            target=source_path, target_is_directory=source_path.is_dir()
+        )
     elif exists == "broken":
-        destination_path.symlink_to(target=tmp_path.joinpath("nonexistent"), target_is_directory=is_dir)
+        destination_path.symlink_to(
+            target=tmp_path.joinpath("nonexistent"), target_is_directory=is_dir
+        )
 
     expected_destination_path = tmp_path.joinpath(expected_destination_sub_path)
 
@@ -1494,69 +1946,113 @@ def test_install_from_path_functional(tmp_path):
     prep_test_folders()
     destination_parent_path.mkdir(parents=True)
     compile_sketches.install_from_path(
-        source_path=source_path, destination_parent_path=destination_parent_path, destination_name=None
+        source_path=source_path,
+        destination_parent_path=destination_parent_path,
+        destination_name=None,
     )
     assert directories_are_same(
-        left_directory=source_path, right_directory=destination_parent_path.joinpath(source_path.name)
+        left_directory=source_path,
+        right_directory=destination_parent_path.joinpath(source_path.name),
     )
 
     # Test custom folder name
     prep_test_folders()
     destination_name = "foo-destination-name"
     compile_sketches.install_from_path(
-        source_path=source_path, destination_parent_path=destination_parent_path, destination_name=destination_name
+        source_path=source_path,
+        destination_parent_path=destination_parent_path,
+        destination_name=destination_name,
     )
     assert directories_are_same(
-        left_directory=source_path, right_directory=destination_parent_path.joinpath(destination_name)
+        left_directory=source_path,
+        right_directory=destination_parent_path.joinpath(destination_name),
     )
 
     # Test install of file
     # Test naming according to source
     prep_test_folders()
     compile_sketches.install_from_path(
-        source_path=test_file_path, destination_parent_path=destination_parent_path, destination_name=None
+        source_path=test_file_path,
+        destination_parent_path=destination_parent_path,
+        destination_name=None,
     )
-    assert filecmp.cmp(f1=test_file_path, f2=destination_parent_path.joinpath(test_file_path.name))
+    assert filecmp.cmp(
+        f1=test_file_path, f2=destination_parent_path.joinpath(test_file_path.name)
+    )
 
     # Test custom folder name
     prep_test_folders()
     destination_name = "foo-destination-name"
     compile_sketches.install_from_path(
-        source_path=test_file_path, destination_parent_path=destination_parent_path, destination_name=destination_name
+        source_path=test_file_path,
+        destination_parent_path=destination_parent_path,
+        destination_name=destination_name,
     )
-    assert filecmp.cmp(f1=test_file_path, f2=destination_parent_path.joinpath(destination_name))
+    assert filecmp.cmp(
+        f1=test_file_path, f2=destination_parent_path.joinpath(destination_name)
+    )
 
 
 def test_path_is_sketch():
     # Sketch file
-    assert compilesketches.path_is_sketch(path=test_data_path.joinpath("HasSketches", "Sketch1", "Sketch1.ino")) is True
+    assert (
+        compilesketches.path_is_sketch(
+            path=test_data_path.joinpath("HasSketches", "Sketch1", "Sketch1.ino")
+        )
+        is True
+    )
 
     # Not a sketch file
     assert (
-        compilesketches.path_is_sketch(path=test_data_path.joinpath("NoSketches", "NotSketch", "NotSketch.foo"))
+        compilesketches.path_is_sketch(
+            path=test_data_path.joinpath("NoSketches", "NotSketch", "NotSketch.foo")
+        )
         is False
     )
 
     # Sketch folder with .ino sketch file
-    assert compilesketches.path_is_sketch(path=test_data_path.joinpath("HasSketches", "Sketch1")) is True
+    assert (
+        compilesketches.path_is_sketch(
+            path=test_data_path.joinpath("HasSketches", "Sketch1")
+        )
+        is True
+    )
 
     # Sketch folder with .pde sketch file
-    assert compilesketches.path_is_sketch(path=test_data_path.joinpath("HasSketches", "Sketch2")) is True
+    assert (
+        compilesketches.path_is_sketch(
+            path=test_data_path.joinpath("HasSketches", "Sketch2")
+        )
+        is True
+    )
 
     # No files in path
-    assert compilesketches.path_is_sketch(path=test_data_path.joinpath("HasSketches")) is False
+    assert (
+        compilesketches.path_is_sketch(path=test_data_path.joinpath("HasSketches"))
+        is False
+    )
 
     # Not a sketch folder
-    assert compilesketches.path_is_sketch(path=test_data_path.joinpath("NoSketches", "NotSketch")) is False
+    assert (
+        compilesketches.path_is_sketch(
+            path=test_data_path.joinpath("NoSketches", "NotSketch")
+        )
+        is False
+    )
 
 
 @pytest.mark.parametrize("clean_build_cache", [True, False])
 @pytest.mark.parametrize("returncode, expected_success", [(1, False), (0, True)])
-def test_compile_sketch(capsys, mocker, clean_build_cache, returncode, expected_success):
+def test_compile_sketch(
+    capsys, mocker, clean_build_cache, returncode, expected_success
+):
     stdout = unittest.mock.sentinel.stdout
     sketch_path = pathlib.Path("FooSketch", "FooSketch.ino").resolve()
 
-    build_cache_paths = [unittest.mock.sentinel.build_cache_paths1, unittest.mock.sentinel.build_cache_paths2]
+    build_cache_paths = [
+        unittest.mock.sentinel.build_cache_paths1,
+        unittest.mock.sentinel.build_cache_paths2,
+    ]
 
     # Stub
     class CompilationData:
@@ -1568,12 +2064,18 @@ def test_compile_sketch(capsys, mocker, clean_build_cache, returncode, expected_
     compile_sketches = get_compilesketches_object()
 
     mocker.patch(
-        "compilesketches.CompileSketches.run_arduino_cli_command", autospec=True, return_value=CompilationData()
+        "compilesketches.CompileSketches.run_arduino_cli_command",
+        autospec=True,
+        return_value=CompilationData(),
     )
-    mocker.patch.object(pathlib.Path, "glob", autospec=True, return_value=build_cache_paths)
+    mocker.patch.object(
+        pathlib.Path, "glob", autospec=True, return_value=build_cache_paths
+    )
     mocker.patch("shutil.rmtree", autospec=True)
 
-    compilation_result = compile_sketches.compile_sketch(sketch_path=sketch_path, clean_build_cache=clean_build_cache)
+    compilation_result = compile_sketches.compile_sketch(
+        sketch_path=sketch_path, clean_build_cache=clean_build_cache
+    )
 
     if clean_build_cache:
         rmtree_calls = []
@@ -1607,8 +2109,14 @@ def test_compile_sketch(capsys, mocker, clean_build_cache, returncode, expected_
 @pytest.mark.parametrize("do_deltas_report", [True, False])
 def test_get_sketch_report(mocker, enable_warnings_report, do_deltas_report):
     original_git_ref = unittest.mock.sentinel.original_git_ref
-    sizes_list = [unittest.mock.sentinel.sketch_report_list1, unittest.mock.sentinel.sketch_report_list2]
-    warning_count_list = [unittest.mock.sentinel.warning_count_list1, unittest.mock.sentinel.warning_count_list2]
+    sizes_list = [
+        unittest.mock.sentinel.sketch_report_list1,
+        unittest.mock.sentinel.sketch_report_list2,
+    ]
+    warning_count_list = [
+        unittest.mock.sentinel.warning_count_list1,
+        unittest.mock.sentinel.warning_count_list2,
+    ]
     sketch = "/foo/SketchName"
     success = unittest.mock.sentinel.success
 
@@ -1635,25 +2143,53 @@ def test_get_sketch_report(mocker, enable_warnings_report, do_deltas_report):
         def checkout(self):
             pass  # pragma: no cover
 
-    compile_sketches = get_compilesketches_object(enable_warnings_report=enable_warnings_report)
-
-    mocker.patch("compilesketches.CompileSketches.get_sizes_from_output", autospec=True, side_effect=sizes_list)
-    mocker.patch(
-        "compilesketches.CompileSketches.get_warning_count_from_output", autospec=True, side_effect=warning_count_list
+    compile_sketches = get_compilesketches_object(
+        enable_warnings_report=enable_warnings_report
     )
-    mocker.patch("compilesketches.CompileSketches.do_deltas_report", autospec=True, return_value=do_deltas_report)
-    mocker.patch("git.Repo", autospec=True, return_value=Repo())
-    mocker.patch("compilesketches.CompileSketches.checkout_deltas_base_ref", autospec=True)
+
     mocker.patch(
-        "compilesketches.CompileSketches.compile_sketch", autospec=True, return_value=previous_compilation_result
+        "compilesketches.CompileSketches.get_sizes_from_output",
+        autospec=True,
+        side_effect=sizes_list,
+    )
+    mocker.patch(
+        "compilesketches.CompileSketches.get_warning_count_from_output",
+        autospec=True,
+        side_effect=warning_count_list,
+    )
+    mocker.patch(
+        "compilesketches.CompileSketches.do_deltas_report",
+        autospec=True,
+        return_value=do_deltas_report,
+    )
+    mocker.patch("git.Repo", autospec=True, return_value=Repo())
+    mocker.patch(
+        "compilesketches.CompileSketches.checkout_deltas_base_ref", autospec=True
+    )
+    mocker.patch(
+        "compilesketches.CompileSketches.compile_sketch",
+        autospec=True,
+        return_value=previous_compilation_result,
     )
     mocker.patch.object(Repo, "checkout")
-    mocker.patch("compilesketches.CompileSketches.get_sizes_report", autospec=True, return_value=sizes_report)
-    mocker.patch("compilesketches.CompileSketches.get_warnings_report", autospec=True, return_value=warnings_report)
+    mocker.patch(
+        "compilesketches.CompileSketches.get_sizes_report",
+        autospec=True,
+        return_value=sizes_report,
+    )
+    mocker.patch(
+        "compilesketches.CompileSketches.get_warnings_report",
+        autospec=True,
+        return_value=warnings_report,
+    )
 
-    sketch_report = compile_sketches.get_sketch_report(compilation_result=compilation_result)
+    sketch_report = compile_sketches.get_sketch_report(
+        compilation_result=compilation_result
+    )
 
-    get_sizes_from_output_calls = [unittest.mock.call(compile_sketches, compilation_result=compilation_result)]
+    get_sizes_from_output_calls = [
+        unittest.mock.call(compile_sketches, compilation_result=compilation_result)
+    ]
     if enable_warnings_report == "true":
         get_warning_count_from_output_calls = [
             unittest.mock.call(compile_sketches, compilation_result=compilation_result)
@@ -1682,11 +2218,15 @@ def test_get_sketch_report(mocker, enable_warnings_report, do_deltas_report):
         )
         Repo.checkout.assert_called_once_with(original_git_ref, recurse_submodules=True)
         get_sizes_from_output_calls.append(
-            unittest.mock.call(compile_sketches, compilation_result=previous_compilation_result)
+            unittest.mock.call(
+                compile_sketches, compilation_result=previous_compilation_result
+            )
         )
         if enable_warnings_report == "true":
             get_warning_count_from_output_calls.append(
-                unittest.mock.call(compile_sketches, compilation_result=previous_compilation_result)
+                unittest.mock.call(
+                    compile_sketches, compilation_result=previous_compilation_result
+                )
             )
         expected_previous_sizes = sizes_list[1]
         expected_previous_warnings = warning_count_list[1]
@@ -1695,24 +2235,34 @@ def test_get_sketch_report(mocker, enable_warnings_report, do_deltas_report):
         expected_previous_sizes = None
         expected_previous_warnings = None
 
-    compilesketches.CompileSketches.get_sizes_from_output.assert_has_calls(calls=get_sizes_from_output_calls)
+    compilesketches.CompileSketches.get_sizes_from_output.assert_has_calls(
+        calls=get_sizes_from_output_calls
+    )
     compilesketches.CompileSketches.get_warning_count_from_output.assert_has_calls(
         calls=get_warning_count_from_output_calls
     )
 
     compile_sketches.get_sizes_report.assert_called_once_with(
-        compile_sketches, current_sizes=sizes_list[0], previous_sizes=expected_previous_sizes
+        compile_sketches,
+        current_sizes=sizes_list[0],
+        previous_sizes=expected_previous_sizes,
     )
 
     if enable_warnings_report == "true":
         # noinspection PyUnresolvedReferences
         compile_sketches.get_warnings_report.assert_called_once_with(
-            compile_sketches, current_warnings=warning_count_list[0], previous_warnings=expected_previous_warnings
+            compile_sketches,
+            current_warnings=warning_count_list[0],
+            previous_warnings=expected_previous_warnings,
         )
 
     expected_sketch_report = {
         compile_sketches.ReportKeys.name: (
-            str(compilesketches.path_relative_to_workspace(path=compilation_result.sketch))
+            str(
+                compilesketches.path_relative_to_workspace(
+                    path=compilation_result.sketch
+                )
+            )
         ),
         compile_sketches.ReportKeys.compilation_success: compilation_result.success,
         compile_sketches.ReportKeys.sizes: sizes_report,
@@ -1870,18 +2420,36 @@ def test_get_sketch_report(mocker, enable_warnings_report, do_deltas_report):
     ],
 )
 def test_get_sizes_from_output(
-    compilation_success, compilation_output, flash, maximum_flash, relative_flash, ram, maximum_ram, relative_ram
+    compilation_success,
+    compilation_output,
+    flash,
+    maximum_flash,
+    relative_flash,
+    ram,
+    maximum_ram,
+    relative_ram,
 ):
     sketch_path = pathlib.PurePath("foo/bar")
     compilation_output = compilation_output.format(
-        flash=str(flash), maximum_flash=str(maximum_flash), ram=str(ram), maximum_ram=str(maximum_ram)
+        flash=str(flash),
+        maximum_flash=str(maximum_flash),
+        ram=str(ram),
+        maximum_ram=str(maximum_ram),
     )
     compile_sketches = get_compilesketches_object()
     compilation_result = type(
-        "CompilationResult", (), {"sketch": sketch_path, "success": compilation_success, "output": compilation_output}
+        "CompilationResult",
+        (),
+        {
+            "sketch": sketch_path,
+            "success": compilation_success,
+            "output": compilation_output,
+        },
     )
 
-    sizes = compile_sketches.get_sizes_from_output(compilation_result=compilation_result)
+    sizes = compile_sketches.get_sizes_from_output(
+        compilation_result=compilation_result
+    )
 
     assert sizes == [
         {
@@ -1931,13 +2499,17 @@ def test_get_sizes_from_output(
         ),
     ],
 )
-def test_get_size_data_from_output(capsys, compilation_output, memory_type, size_data_type, expected_output):
+def test_get_size_data_from_output(
+    capsys, compilation_output, memory_type, size_data_type, expected_output
+):
     compilation_output = compilation_output.format(expected_output=str(expected_output))
     # print(compilation_output)
     # size_data_type=get_compilesketches_object().ReportKeys.maximum
     compile_sketches = get_compilesketches_object(verbose="true")
 
-    size_data = compile_sketches.get_size_data_from_output(compilation_output, memory_type, size_data_type)
+    size_data = compile_sketches.get_size_data_from_output(
+        compilation_output, memory_type, size_data_type
+    )
     assert size_data == expected_output
     if expected_output is None:
         expected_stdout = (
@@ -1953,8 +2525,16 @@ def test_get_size_data_from_output(capsys, compilation_output, memory_type, size
 @pytest.mark.parametrize(
     "compilation_success, test_compilation_output_filename, expected_warning_count",
     [
-        (True, pathlib.Path("test_get_warning_count_from_output", "has-warnings.txt"), 45),
-        (True, pathlib.Path("test_get_warning_count_from_output", "no-warnings.txt"), 0),
+        (
+            True,
+            pathlib.Path("test_get_warning_count_from_output", "has-warnings.txt"),
+            45,
+        ),
+        (
+            True,
+            pathlib.Path("test_get_warning_count_from_output", "no-warnings.txt"),
+            0,
+        ),
         (
             False,
             pathlib.Path("test_get_warning_count_from_output", "has-warnings.txt"),
@@ -1962,22 +2542,33 @@ def test_get_size_data_from_output(capsys, compilation_output, memory_type, size
         ),
     ],
 )
-def test_get_warning_count_from_output(compilation_success, test_compilation_output_filename, expected_warning_count):
+def test_get_warning_count_from_output(
+    compilation_success, test_compilation_output_filename, expected_warning_count
+):
     compile_sketches = get_compilesketches_object()
 
     with open(
-        file=test_data_path.joinpath(test_compilation_output_filename), mode="r", encoding="utf-8"
+        file=test_data_path.joinpath(test_compilation_output_filename),
+        mode="r",
+        encoding="utf-8",
     ) as test_compilation_output_file:
 
         class CompilationResult:
             success = compilation_success
             output = test_compilation_output_file.read()
 
-    assert compile_sketches.get_warning_count_from_output(CompilationResult()) == expected_warning_count
+    assert (
+        compile_sketches.get_warning_count_from_output(CompilationResult())
+        == expected_warning_count
+    )
 
 
 @pytest.mark.parametrize(
-    "enable_deltas_report," "compilation_success," "current_sizes," "current_warnings," "do_deltas_report_expected",
+    "enable_deltas_report,"
+    "compilation_success,"
+    "current_sizes,"
+    "current_warnings,"
+    "do_deltas_report_expected",
     [
         (
             "true",
@@ -2070,18 +2661,31 @@ def test_get_warning_count_from_output(compilation_success, test_compilation_out
     ],
 )
 def test_do_deltas_report(
-    monkeypatch, enable_deltas_report, compilation_success, current_sizes, current_warnings, do_deltas_report_expected
+    monkeypatch,
+    enable_deltas_report,
+    compilation_success,
+    current_sizes,
+    current_warnings,
+    do_deltas_report_expected,
 ):
-    compile_sketches = get_compilesketches_object(enable_deltas_report=enable_deltas_report)
+    compile_sketches = get_compilesketches_object(
+        enable_deltas_report=enable_deltas_report
+    )
 
     compilation_result = type(
         "CompilationResult",
         (),
-        {"sketch": "/foo/SketchName", "success": compilation_success, "output": "foo compilation output"},
+        {
+            "sketch": "/foo/SketchName",
+            "success": compilation_success,
+            "output": "foo compilation output",
+        },
     )
     assert (
         compile_sketches.do_deltas_report(
-            compilation_result=compilation_result, current_sizes=current_sizes, current_warnings=current_warnings
+            compilation_result=compilation_result,
+            current_sizes=current_sizes,
+            current_warnings=current_warnings,
         )
         == do_deltas_report_expected
     )
@@ -2102,7 +2706,9 @@ def test_checkout_deltas_base_ref(monkeypatch, mocker):
         def checkout(self):
             pass  # pragma: no cover
 
-    compile_sketches = get_compilesketches_object(enable_deltas_report="true", deltas_base_ref=deltas_base_ref)
+    compile_sketches = get_compilesketches_object(
+        enable_deltas_report="true", deltas_base_ref=deltas_base_ref
+    )
 
     mocker.patch("git.Repo", autospec=True, return_value=Repo())
     mocker.patch.object(Repo, "fetch")
@@ -2123,20 +2729,40 @@ def test_checkout_deltas_base_ref(monkeypatch, mocker):
 
 
 def test_get_sizes_report(mocker):
-    sizes_report = [unittest.mock.sentinel.size_report1, unittest.mock.sentinel.size_report1]
-    current_sizes = [unittest.mock.sentinel.current_sizes1, unittest.mock.sentinel.current_sizes2]
-    previous_sizes = [unittest.mock.sentinel.previous_sizes1, unittest.mock.sentinel.previous_sizes2]
+    sizes_report = [
+        unittest.mock.sentinel.size_report1,
+        unittest.mock.sentinel.size_report1,
+    ]
+    current_sizes = [
+        unittest.mock.sentinel.current_sizes1,
+        unittest.mock.sentinel.current_sizes2,
+    ]
+    previous_sizes = [
+        unittest.mock.sentinel.previous_sizes1,
+        unittest.mock.sentinel.previous_sizes2,
+    ]
 
     compile_sketches = get_compilesketches_object()
 
-    mocker.patch("compilesketches.CompileSketches.get_size_report", autospec=True, side_effect=sizes_report)
+    mocker.patch(
+        "compilesketches.CompileSketches.get_size_report",
+        autospec=True,
+        side_effect=sizes_report,
+    )
 
-    assert compile_sketches.get_sizes_report(current_sizes=current_sizes, previous_sizes=previous_sizes) == sizes_report
+    assert (
+        compile_sketches.get_sizes_report(
+            current_sizes=current_sizes, previous_sizes=previous_sizes
+        )
+        == sizes_report
+    )
 
     get_size_report_calls = []
     for current_size, previous_size in zip(current_sizes, previous_sizes):
         get_size_report_calls.append(
-            unittest.mock.call(compile_sketches, current_size=current_size, previous_size=previous_size)
+            unittest.mock.call(
+                compile_sketches, current_size=current_size, previous_size=previous_size
+            )
         )
 
     compile_sketches.get_size_report.assert_has_calls(get_size_report_calls)
@@ -2145,12 +2771,19 @@ def test_get_sizes_report(mocker):
     previous_sizes = None
     mocker.resetall()
     compilesketches.CompileSketches.get_size_report.side_effect = sizes_report
-    assert compile_sketches.get_sizes_report(current_sizes=current_sizes, previous_sizes=previous_sizes) == sizes_report
+    assert (
+        compile_sketches.get_sizes_report(
+            current_sizes=current_sizes, previous_sizes=previous_sizes
+        )
+        == sizes_report
+    )
 
     get_size_report_calls = []
     for current_size in current_sizes:
         get_size_report_calls.append(
-            unittest.mock.call(compile_sketches, current_size=current_size, previous_size=None)
+            unittest.mock.call(
+                compile_sketches, current_size=current_size, previous_size=None
+            )
         )
 
     compile_sketches.get_size_report.assert_has_calls(get_size_report_calls)
@@ -2193,7 +2826,12 @@ def test_get_sizes_report(mocker):
     ],
 )
 def test_get_size_report(
-    capsys, size_maximum, current_absolute, previous_size, expected_absolute_delta, expected_relative_delta
+    capsys,
+    size_maximum,
+    current_absolute,
+    previous_size,
+    expected_absolute_delta,
+    expected_relative_delta,
 ):
     size_name = "Foo size name"
     current_relative = 42
@@ -2214,7 +2852,9 @@ def test_get_size_report(
 
     compile_sketches = get_compilesketches_object()
 
-    size_report = compile_sketches.get_size_report(current_size=current_size, previous_size=previous_size)
+    size_report = compile_sketches.get_size_report(
+        current_size=current_size, previous_size=previous_size
+    )
 
     if previous_size is None:
         assert capsys.readouterr().out.strip() == ""
@@ -2231,8 +2871,13 @@ def test_get_size_report(
             compilesketches.CompileSketches.ReportKeys.absolute: expected_absolute_delta,
             compilesketches.CompileSketches.ReportKeys.relative: expected_relative_delta,
         }
-        if expected_relative_delta == compilesketches.CompileSketches.not_applicable_indicator:
-            assert capsys.readouterr().out.strip() == ("Change in " + size_name + ": " + str(expected_absolute_delta))
+        if (
+            expected_relative_delta
+            == compilesketches.CompileSketches.not_applicable_indicator
+        ):
+            assert capsys.readouterr().out.strip() == (
+                "Change in " + size_name + ": " + str(expected_absolute_delta)
+            )
         else:
             assert capsys.readouterr().out.strip() == (
                 "Change in "
@@ -2298,7 +2943,9 @@ def test_get_size_report(
 def test_get_warnings_report(current_warnings, previous_warnings, expected_report):
     compile_sketches = get_compilesketches_object()
     assert (
-        compile_sketches.get_warnings_report(current_warnings=current_warnings, previous_warnings=previous_warnings)
+        compile_sketches.get_warnings_report(
+            current_warnings=current_warnings, previous_warnings=previous_warnings
+        )
         == expected_report
     )
 
@@ -2310,14 +2957,20 @@ def test_get_sketches_report(monkeypatch, mocker):
 
     monkeypatch.setenv("GITHUB_REPOSITORY", github_repository)
 
-    mocker.patch("compilesketches.get_head_commit_hash", autospec=True, return_value=current_git_ref)
+    mocker.patch(
+        "compilesketches.get_head_commit_hash",
+        autospec=True,
+        return_value=current_git_ref,
+    )
 
     sizes_summary_report = unittest.mock.sentinel.sizes_summary_report
     warnings_summary_report = unittest.mock.sentinel.warnings_summary_report
     sketch_report_list = unittest.mock.sentinel.sketch_report_list
 
     mocker.patch(
-        "compilesketches.CompileSketches.get_sizes_summary_report", autospec=True, return_value=sizes_summary_report
+        "compilesketches.CompileSketches.get_sizes_summary_report",
+        autospec=True,
+        return_value=sizes_summary_report,
     )
 
     mocker.patch(
@@ -2328,7 +2981,9 @@ def test_get_sketches_report(monkeypatch, mocker):
 
     compile_sketches = get_compilesketches_object(fqbn_arg=fqbn_arg)
 
-    assert compile_sketches.get_sketches_report(sketch_report_list=sketch_report_list) == {
+    assert compile_sketches.get_sketches_report(
+        sketch_report_list=sketch_report_list
+    ) == {
         compilesketches.CompileSketches.ReportKeys.commit_hash: current_git_ref,
         compilesketches.CompileSketches.ReportKeys.commit_url: (
             "https://github.com/" + github_repository + "/commit/" + current_git_ref
@@ -2356,7 +3011,9 @@ def test_get_sketches_report(monkeypatch, mocker):
     compilesketches.CompileSketches.get_sizes_summary_report.return_value = []
     compilesketches.CompileSketches.get_warnings_summary_report.return_value = {}
 
-    assert compile_sketches.get_sketches_report(sketch_report_list=sketch_report_list) == {
+    assert compile_sketches.get_sketches_report(
+        sketch_report_list=sketch_report_list
+    ) == {
         compilesketches.CompileSketches.ReportKeys.commit_hash: current_git_ref,
         compilesketches.CompileSketches.ReportKeys.commit_url: (
             "https://github.com/" + github_repository + "/commit/" + current_git_ref
@@ -2447,9 +3104,9 @@ def test_get_sizes_summary_report():
 
     compile_sketches = get_compilesketches_object()
 
-    assert compile_sketches.get_sizes_summary_report(sketch_report_list=sketch_report_list) == (
-        expected_sizes_summary_report
-    )
+    assert compile_sketches.get_sizes_summary_report(
+        sketch_report_list=sketch_report_list
+    ) == (expected_sizes_summary_report)
 
     # N/A in one sketch report
     sketch_report_list = [
@@ -2526,9 +3183,9 @@ def test_get_sizes_summary_report():
         },
     ]
 
-    assert compile_sketches.get_sizes_summary_report(sketch_report_list=sketch_report_list) == (
-        expected_sizes_summary_report
-    )
+    assert compile_sketches.get_sizes_summary_report(
+        sketch_report_list=sketch_report_list
+    ) == (expected_sizes_summary_report)
 
     # N/A in all sketch reports
     sketch_report_list = [
@@ -2605,9 +3262,9 @@ def test_get_sizes_summary_report():
         },
     ]
 
-    assert compile_sketches.get_sizes_summary_report(sketch_report_list=sketch_report_list) == (
-        expected_sizes_summary_report
-    )
+    assert compile_sketches.get_sizes_summary_report(
+        sketch_report_list=sketch_report_list
+    ) == (expected_sizes_summary_report)
 
     # No deltas data
     sketch_report_list = [
@@ -2664,9 +3321,9 @@ def test_get_sizes_summary_report():
         },
     ]
 
-    assert compile_sketches.get_sizes_summary_report(sketch_report_list=sketch_report_list) == (
-        expected_sizes_summary_report
-    )
+    assert compile_sketches.get_sizes_summary_report(
+        sketch_report_list=sketch_report_list
+    ) == (expected_sizes_summary_report)
 
 
 def test_get_warnings_summary_report():
@@ -2698,9 +3355,9 @@ def test_get_warnings_summary_report():
         }
     }
 
-    assert compile_sketches.get_warnings_summary_report(sketch_report_list=sketch_report_list) == (
-        expected_warnings_summary_report
-    )
+    assert compile_sketches.get_warnings_summary_report(
+        sketch_report_list=sketch_report_list
+    ) == (expected_warnings_summary_report)
 
     sketch_report_list = [
         {
@@ -2728,9 +3385,9 @@ def test_get_warnings_summary_report():
         }
     }
 
-    assert compile_sketches.get_warnings_summary_report(sketch_report_list=sketch_report_list) == (
-        expected_warnings_summary_report
-    )
+    assert compile_sketches.get_warnings_summary_report(
+        sketch_report_list=sketch_report_list
+    ) == (expected_warnings_summary_report)
 
     # N/As
     sketch_report_list = [
@@ -2759,9 +3416,9 @@ def test_get_warnings_summary_report():
         }
     }
 
-    assert compile_sketches.get_warnings_summary_report(sketch_report_list=sketch_report_list) == (
-        expected_warnings_summary_report
-    )
+    assert compile_sketches.get_warnings_summary_report(
+        sketch_report_list=sketch_report_list
+    ) == (expected_warnings_summary_report)
 
     sketch_report_list = [
         {
@@ -2789,9 +3446,9 @@ def test_get_warnings_summary_report():
         }
     }
 
-    assert compile_sketches.get_warnings_summary_report(sketch_report_list=sketch_report_list) == (
-        expected_warnings_summary_report
-    )
+    assert compile_sketches.get_warnings_summary_report(
+        sketch_report_list=sketch_report_list
+    ) == (expected_warnings_summary_report)
 
     sketch_report_list = [
         {
@@ -2819,9 +3476,9 @@ def test_get_warnings_summary_report():
         }
     }
 
-    assert compile_sketches.get_warnings_summary_report(sketch_report_list=sketch_report_list) == (
-        expected_warnings_summary_report
-    )
+    assert compile_sketches.get_warnings_summary_report(
+        sketch_report_list=sketch_report_list
+    ) == (expected_warnings_summary_report)
 
     # Test with deltas disabled
     sketch_report_list = [
@@ -2843,18 +3500,18 @@ def test_get_warnings_summary_report():
 
     expected_warnings_summary_report = {}
 
-    assert compile_sketches.get_warnings_summary_report(sketch_report_list=sketch_report_list) == (
-        expected_warnings_summary_report
-    )
+    assert compile_sketches.get_warnings_summary_report(
+        sketch_report_list=sketch_report_list
+    ) == (expected_warnings_summary_report)
 
     # Test with warnings report disabled
     sketch_report_list = [{}, {}]
 
     expected_warnings_summary_report = {}
 
-    assert compile_sketches.get_warnings_summary_report(sketch_report_list=sketch_report_list) == (
-        expected_warnings_summary_report
-    )
+    assert compile_sketches.get_warnings_summary_report(
+        sketch_report_list=sketch_report_list
+    ) == (expected_warnings_summary_report)
 
 
 def test_create_sketches_report_file(monkeypatch, tmp_path):
@@ -2879,7 +3536,9 @@ def test_create_sketches_report_file(monkeypatch, tmp_path):
 
     compile_sketches.create_sketches_report_file(sketches_report=sketches_report)
 
-    with open(file=str(sketches_report_path.joinpath("arduino-avr-uno.json"))) as sketch_report_file:
+    with open(
+        file=str(sketches_report_path.joinpath("arduino-avr-uno.json"))
+    ) as sketch_report_file:
         assert json.load(sketch_report_file) == sketches_report
 
 
@@ -2887,10 +3546,26 @@ def test_create_sketches_report_file(monkeypatch, tmp_path):
     "cli_version, data, assertion",
     [
         ("latest", {"platforms": None}, []),  # Non-semver
-        ("latest", {"platforms": [unittest.mock.sentinel.list_item]}, [unittest.mock.sentinel.list_item]),  # Non-semver
-        ("2.0.0", {"platforms": [unittest.mock.sentinel.list_item]}, [unittest.mock.sentinel.list_item]),  # >
-        ("1.0.0", {"platforms": [unittest.mock.sentinel.list_item]}, [unittest.mock.sentinel.list_item]),  # ==
-        ("0.1.2", [unittest.mock.sentinel.list_item], [unittest.mock.sentinel.list_item]),  # <
+        (
+            "latest",
+            {"platforms": [unittest.mock.sentinel.list_item]},
+            [unittest.mock.sentinel.list_item],
+        ),  # Non-semver
+        (
+            "2.0.0",
+            {"platforms": [unittest.mock.sentinel.list_item]},
+            [unittest.mock.sentinel.list_item],
+        ),  # >
+        (
+            "1.0.0",
+            {"platforms": [unittest.mock.sentinel.list_item]},
+            [unittest.mock.sentinel.list_item],
+        ),  # ==
+        (
+            "0.1.2",
+            [unittest.mock.sentinel.list_item],
+            [unittest.mock.sentinel.list_item],
+        ),  # <
     ],
 )
 def test_cli_core_list_platform_list(cli_version, data, assertion):
@@ -2922,11 +3597,17 @@ def test_verbose_print(capsys, verbose):
 
     compile_sketches = get_compilesketches_object(verbose=verbose)
 
-    compile_sketches.verbose_print(string_print_argument, int_print_argument, path_print_argument)
+    compile_sketches.verbose_print(
+        string_print_argument, int_print_argument, path_print_argument
+    )
 
     if verbose == "true":
         assert capsys.readouterr().out.strip() == (
-            string_print_argument + " " + str(int_print_argument) + " " + str(path_print_argument)
+            string_print_argument
+            + " "
+            + str(int_print_argument)
+            + " "
+            + str(path_print_argument)
         )
     else:
         assert capsys.readouterr().out.strip() == ""
@@ -2979,7 +3660,10 @@ def test_parse_fqbn_arg_input(fqbn_arg, expected_fqbn, expected_additional_url):
     [("true", True), ("True", True), ("false", False), ("False", False), ("foo", None)],
 )
 def test_parse_boolean_input(boolean_input, expected_output):
-    assert compilesketches.parse_boolean_input(boolean_input=boolean_input) == expected_output
+    assert (
+        compilesketches.parse_boolean_input(boolean_input=boolean_input)
+        == expected_output
+    )
 
 
 @pytest.mark.parametrize(
@@ -2992,8 +3676,13 @@ def test_parse_boolean_input(boolean_input, expected_output):
     ],
 )
 def test_path_relative_to_workspace(path, expected_relative_path):
-    assert compilesketches.path_relative_to_workspace(path=path) == expected_relative_path
-    assert compilesketches.path_relative_to_workspace(path=pathlib.PurePath(path)) == expected_relative_path
+    assert (
+        compilesketches.path_relative_to_workspace(path=path) == expected_relative_path
+    )
+    assert (
+        compilesketches.path_relative_to_workspace(path=pathlib.PurePath(path))
+        == expected_relative_path
+    )
 
 
 @pytest.mark.parametrize(
@@ -3002,7 +3691,10 @@ def test_path_relative_to_workspace(path, expected_relative_path):
     [
         ("/asdf", pathlib.Path("/").resolve().joinpath("asdf")),
         # Relative path
-        ("asdf", pathlib.Path(os.environ["GITHUB_WORKSPACE"]).resolve().joinpath("asdf")),
+        (
+            "asdf",
+            pathlib.Path(os.environ["GITHUB_WORKSPACE"]).resolve().joinpath("asdf"),
+        ),
         # Use of ~
         ("~/foo", pathlib.Path.home().joinpath("foo")),
         # Use of ..
@@ -3011,18 +3703,29 @@ def test_path_relative_to_workspace(path, expected_relative_path):
 )
 def test_absolute_path(path, expected_absolute_path):
     assert compilesketches.absolute_path(path=path) == expected_absolute_path
-    assert compilesketches.absolute_path(path=pathlib.PurePath(path)) == expected_absolute_path
+    assert (
+        compilesketches.absolute_path(path=pathlib.PurePath(path))
+        == expected_absolute_path
+    )
 
 
 @pytest.mark.parametrize(
     "path, expected_path",
     [
         ("foo/bar-relative-path", pathlib.PurePath("foo/bar-relative-path")),
-        ("/foo/bar-absolute-path", pathlib.Path("/").resolve().joinpath("foo", "bar-absolute-path")),
+        (
+            "/foo/bar-absolute-path",
+            pathlib.Path("/").resolve().joinpath("foo", "bar-absolute-path"),
+        ),
     ],
 )
 def test_absolute_relative_path_conversion(path, expected_path):
-    assert compilesketches.path_relative_to_workspace(path=compilesketches.absolute_path(path=path)) == expected_path
+    assert (
+        compilesketches.path_relative_to_workspace(
+            path=compilesketches.absolute_path(path=path)
+        )
+        == expected_path
+    )
 
 
 def test_list_to_string():
@@ -3041,7 +3744,13 @@ def test_list_to_string():
     ],
 )
 def test_install_from_download(
-    capsys, tmp_path, arcname, source_path, destination_name, expected_destination_name, expected_success
+    capsys,
+    tmp_path,
+    arcname,
+    source_path,
+    destination_name,
+    expected_destination_name,
+    expected_success,
 ):
     url_source_path = test_data_path.joinpath("HasSketches")
 
@@ -3054,7 +3763,9 @@ def test_install_from_download(
     url = url_archive_path.as_uri()
 
     # Create an archive file
-    with tarfile.open(name=url_archive_path, mode="w:gz", format=tarfile.GNU_FORMAT) as tar:
+    with tarfile.open(
+        name=url_archive_path, mode="w:gz", format=tarfile.GNU_FORMAT
+    ) as tar:
         tar.add(name=url_source_path, arcname=arcname)
 
     destination_parent_path = tmp_path.joinpath("destination_parent_path")
@@ -3080,7 +3791,9 @@ def test_install_from_download(
                 destination_parent_path=destination_parent_path,
                 destination_name=destination_name,
             )
-        assert capsys.readouterr().out.strip() == ("::error::Archive source path: " + source_path + " not found")
+        assert capsys.readouterr().out.strip() == (
+            "::error::Archive source path: " + source_path + " not found"
+        )
 
 
 @pytest.mark.parametrize(
@@ -3088,7 +3801,9 @@ def test_install_from_download(
     [
         (
             test_data_path.joinpath("test_get_archive_root_folder_name", "has-root"),
-            test_data_path.joinpath("test_get_archive_root_folder_name", "has-root", "root"),
+            test_data_path.joinpath(
+                "test_get_archive_root_folder_name", "has-root", "root"
+            ),
         ),
         (
             test_data_path.joinpath("test_get_archive_root_folder_name", "has-file"),
@@ -3101,18 +3816,33 @@ def test_install_from_download(
     ],
 )
 def test_get_archive_root_path(archive_extract_path, expected_archive_root_path):
-    assert compilesketches.get_archive_root_path(archive_extract_path) == expected_archive_root_path
+    assert (
+        compilesketches.get_archive_root_path(archive_extract_path)
+        == expected_archive_root_path
+    )
 
 
 @pytest.mark.parametrize(
     "url, source_path, destination_name, expected_destination_name",
     [
-        ("https://example.com/foo/FooRepositoryName.git", ".", None, "FooRepositoryName"),
-        ("https://example.com/foo/FooRepositoryName.git/", "./examples", "FooDestinationName", "FooDestinationName"),
+        (
+            "https://example.com/foo/FooRepositoryName.git",
+            ".",
+            None,
+            "FooRepositoryName",
+        ),
+        (
+            "https://example.com/foo/FooRepositoryName.git/",
+            "./examples",
+            "FooDestinationName",
+            "FooDestinationName",
+        ),
         ("git://example.com/foo/FooRepositoryName", "examples", None, None),
     ],
 )
-def test_install_from_repository(mocker, url, source_path, destination_name, expected_destination_name):
+def test_install_from_repository(
+    mocker, url, source_path, destination_name, expected_destination_name
+):
     git_ref = unittest.mock.sentinel.git_ref
     destination_parent_path = unittest.mock.sentinel.destination_parent_path
     force = unittest.mock.sentinel.force
@@ -3157,7 +3887,9 @@ def test_clone_repository(tmp_path, git_ref):
 
     compile_sketches = get_compilesketches_object()
 
-    compile_sketches.clone_repository(url=url, git_ref=git_ref, destination_path=destination_path)
+    compile_sketches.clone_repository(
+        url=url, git_ref=git_ref, destination_path=destination_path
+    )
 
     # Make another clone of the repository to compare
     test_clone_path = tmp_path.joinpath("test_clone_path")
@@ -3174,11 +3906,14 @@ def test_clone_repository(tmp_path, git_ref):
         cloned_repository.git.checkout(git_ref)
 
     # Verify that the installation matches the test clone
-    assert directories_are_same(left_directory=destination_path, right_directory=test_clone_path)
+    assert directories_are_same(
+        left_directory=destination_path, right_directory=test_clone_path
+    )
 
 
 @pytest.mark.parametrize(
-    "github_event, expected_hash", [("pull_request", "pull_request-head-sha"), ("push", "push-head-sha")]
+    "github_event, expected_hash",
+    [("pull_request", "pull_request-head-sha"), ("push", "push-head-sha")],
 )
 def test_get_head_commit_hash(monkeypatch, mocker, github_event, expected_hash):
     # Stub
@@ -3190,7 +3925,9 @@ def test_get_head_commit_hash(monkeypatch, mocker, github_event, expected_hash):
             pass  # pragma: no cover
 
     monkeypatch.setenv("GITHUB_EVENT_NAME", github_event)
-    monkeypatch.setenv("GITHUB_EVENT_PATH", str(test_data_path.joinpath("githubevent.json")))
+    monkeypatch.setenv(
+        "GITHUB_EVENT_PATH", str(test_data_path.joinpath("githubevent.json"))
+    )
 
     mocker.patch("git.Repo", autospec=True, return_value=Repo())
     mocker.patch.object(Repo, "rev_parse", return_value="push-head-sha")
