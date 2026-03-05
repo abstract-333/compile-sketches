@@ -401,7 +401,6 @@ class CompileSketches:
             if len(fqbn_parts) >= 2:
                 vendor, arch = fqbn_parts[0], fqbn_parts[1]
                 check_path = self.board_manager_platforms_path.joinpath(vendor, "hardware", arch)
-                x
                 if check_path.exists():
                     print(f"🚀 Cache Hit: Platform {vendor}:{arch} found. Skipping installation.")
                     return
