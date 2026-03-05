@@ -80,7 +80,7 @@ runs:
       with:
         version: "0.10.7" 
         enable-cache: true
-        cache-dependency-glob: "uv.lock"
+        cache-dependency-glob: "${{ github.action_path }}/uv.lock"
 
     - name: Install dependencies
       shell: bash
