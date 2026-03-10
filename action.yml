@@ -80,19 +80,12 @@ runs:
       with:
         version: "0.10.7" 
         enable-cache: true
-        cache-dependency-glob: "${{ github.action_path }}/uv.lock"
+        cache-dependency-glob: "${{ github.action_path }}/requirements.txt"
 
     - name: Install dependencies
       shell: bash
       working-directory: ${{ github.action_path }}
-      run: uv sync --no-dev 
-
-    - name: Cache Arduino Files
-      if: inputs.enable-cache == 'true'
-      uses: actions/cache@v5
-      with:
-        path: ~/.arduino15/packages
-        key: arduino-${{ runner.os }}-${{ inputs.fqbn }}
+      run: uv pip install -r --system requirements.txt 
 
     - name: Run script
       shell: bash
